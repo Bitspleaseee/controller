@@ -4,6 +4,7 @@ CREATE TABLE `threads` (
   `category_id` INT NOT NULL,
   `user_id` INT NOT NULL,
   `title` VARCHAR(45) NOT NULL,
+  `description` TEXT NOT NULL,
   `timestamp` DATETIME NOT NULL DEFAULT NOW(),
   `hidden` BOOLEAN NOT NULL DEFAULT 0,
 

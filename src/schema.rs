@@ -2,7 +2,7 @@ table! {
     categories (id) {
         id -> Integer,
         title -> Varchar,
-        description -> Nullable<Varchar>,
+        description -> Text,
         hidden -> Bool,
     }
 }
@@ -24,6 +24,7 @@ table! {
         category_id -> Integer,
         user_id -> Integer,
         title -> Varchar,
+        description -> Text,
         timestamp -> Datetime,
         hidden -> Bool,
     }
