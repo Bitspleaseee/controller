@@ -1,25 +1,33 @@
 image: rustlang/rust:nightly
 
 pipelines:
-  default:
-    - step:
-        name: Build project
-        artifacts:
-            - target/**
-        script:
-          - cargo build -v
-    - parallel:
+  branches:
+      master:
         - step:
-            name: Run tests
+            name: Build project
+            artifacts:
+                - target/**
+            caches:
+                - cargo
+                - rust-target
             script:
-                - cargo test -v
-        - step:
-            name: Check formatting
-            script:
-                - rustup component add rustfmt-preview
-                - cargo fmt -v -- --check
-        - step:
-            name: Check clippy
-            script:
-                - rustup component add clippy-preview
-                - touch ./src/main.rs && cargo clippy -- -D warnings
+              - cargo build -v
+        - parallel:
+            - step:
+                name: Run tests
+                script:
+                    - cargo test -v
+            - step:
+                name: Check formatting
+                script:
+                    - rustup component add rustfmt-preview
+                    - cargo fmt -v -- --check
+            - step:
+                name: Check clippy
+                script:
+                    - rustup component add clippy-preview
+                    - touch ./src/main.rs && cargo clippy -- -D warnings
+definitions:
+  caches:
+    cargo: /usr/local/cargo # CARGO_HOME
+    rust-target: $BITBUCKET_CLONE_DIR/target
