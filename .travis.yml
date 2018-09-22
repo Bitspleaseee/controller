@@ -6,17 +6,23 @@ branches:
   - master
 jobs:
   include:
-    - stage: build
-      script:
-        - cargo build --verbose
-    - stage: tests
-      script:
-        - cargo test --verbose
-    - stage: tests
-      script:
-        - rustup component add rustfmt-preview
-        - cargo fmt -v -- --check
-    - stage: tests
-      script:
-        - rustup component add clippy-preview
-        - touch ./src/main.rs && cargo clippy -- -D warnings
+  - stage: build
+    script:
+    - cargo build --verbose
+  - stage: tests
+    script:
+    - cargo test --verbose
+  - stage: tests
+    script:
+    - rustup component add rustfmt-preview
+    - cargo fmt -v -- --check
+  - stage: tests
+    script:
+    - rustup component add clippy-preview
+    - touch ./src/main.rs && cargo clippy -- -D warnings
+notifications:
+  email: false
+  slack:
+    secure: gyLX2wRdkPKFofpuRGrag+csDyyn8F8NyiN2c5kYBcNHDb7f2n3V2z3iGg8Yb82Qyryl4r6Gor6tugm6J/c8o+fPDG8W1Y6bZ6lxEmjNgyTYFfe8s4YTRlqvNaVI4FOOCND09Rd49JdAlS6LTEQMmp9UX18ma2MSE5UtssRvs1ilM4WJpKlCgmjezw6Qp5l/BP+aI8A/0GjGqJkBX+fAyS7jlxs0pidnt/e67MOSoeur5heltpC720/oQ7B31KUrdDKS6DgWBy7JlBHErxZrzUwkUpd0iK9k+m8AiFvUAIa7z8C1VIFvb2xxIRQwZEXA5pSYWlASeQk0uAT6wXFV1t4y0xVhTLfRFvOoDGcsA1sCOqMueJpqhAP/1dRozDYCq/Gwta9I4auJvh9wq5uFJga935lTwBr1+ig3nvi2JS0WDEN+IsE6Jast5Wc8/bMIbHai+hcO6r9IpJ3JjzIeBtGN70reWYNYs7EntVBF84Is108qpA5zzj60tDfTMrr2SL/JkDSPMcnOPD0bjQRL/4DwKhZJCFt+H0W2yxPnAaQxMxvU8BESwH5QKivkvJfe34M75C97BuPpapiYJ3h2EGWy6xHn9dsm4KA1/J2fYBUGj7GL+81miIlBrzMmO7rZLvSAAJDZPFvrksD08P+NnMOWQXzN9slYkeMOPDlmv7w=
+    on_success: change
+    on_failure: always
