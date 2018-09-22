@@ -7,6 +7,7 @@ pub mod schema;
 
 use self::models::User;
 
+/// Establishes a connection to the db
 pub fn establish_connection() -> MysqlConnection {
     dotenv().ok();
 
@@ -16,7 +17,8 @@ pub fn establish_connection() -> MysqlConnection {
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
-pub fn insert_user(user_id: i32, username: &str) -> User {
+/// Inserts new user into the user table
+pub fn insert_user(user_id: i32, username: &str) -> Result<Option<User>, diesel::result::Error> {
     use self::schema::users::dsl::{id, users};
 
     let connection = establish_connection();
@@ -28,52 +30,94 @@ pub fn insert_user(user_id: i32, username: &str) -> User {
         avatar: None,
     };
 
-    println!("Inserting user: {}", new_user.username);
-    diesel::insert_into(users)
+    println!("Inserting user: ({}) {}", new_user.id, new_user.username);
+    let result = diesel::insert_into(users)
         .values(&new_user)
-        .execute(&connection)
-        .expect("Error inserting user");
+        .execute(&connection);
 
-    users.order(id.desc()).first(&connection).unwrap()
+    match result {
+        Ok(_) => Ok(users.order(id.desc()).first(&connection).ok()),
+        Err(error) => {
+            println!(
+                "Error inserting user: ({}) {}",
+                new_user.id, new_user.username
+            );
+            Err(error)
+        }
+    }
 }
 
-pub fn get_user(user_id: i32) -> User {
+/// Gets an exisiting user from the user table
+pub fn get_user(user_id: i32) -> Result<Option<User>, diesel::result::Error> {
     use self::schema::users::dsl::*;
 
     let connection = establish_connection();
 
     println!("Getting user: {}", user_id);
-    users
-        .filter(id.eq(user_id))
-        .first(&connection)
-        .expect("Error getting user")
+    users.filter(id.eq(user_id)).first(&connection).optional()
 }
 
-pub fn delete_user(user_id: i32) -> usize {
+// Updates an existing user in the user table
+pub fn update_user(user: &User) -> Result<usize, diesel::result::Error> {
     use self::schema::users::dsl::*;
 
     let connection = establish_connection();
 
-    let num_deleted = diesel::delete(users)
-        .filter(id.eq(user_id))
-        .execute(&connection)
-        .expect("Error deleting user");
+    let result = diesel::update(users)
+        .set(user)
+        .filter(id.eq(user.id))
+        .execute(&connection);
 
-    println!("Deleted {} rows", num_deleted);
-
-    num_deleted
+    match result {
+        Ok(num_updated) => {
+            println!("Updated {} rows", num_updated);
+            Ok(num_updated)
+        }
+        Err(error) => {
+            println!("Error updating user: ({}) {}", user.id, user.username);
+            Err(error)
+        }
+    }
 }
 
-pub fn delete_all_users() -> usize {
+// Deletes a existing user from the user table
+pub fn delete_user(user_id: i32) -> Result<usize, diesel::result::Error> {
     use self::schema::users::dsl::*;
 
     let connection = establish_connection();
 
-    let num_deleted = diesel::delete(users)
-        .execute(&connection)
-        .expect("Error deleting users");
+    let result = diesel::delete(users)
+        .filter(id.eq(user_id))
+        .execute(&connection);
 
-    println!("Deleted {} rows", num_deleted);
+    match result {
+        Ok(num_deleted) => {
+            println!("Deleted {} rows", num_deleted);
+            Ok(num_deleted)
+        }
+        Err(error) => {
+            println!("Error deleting user: {}", user_id);
+            Err(error)
+        }
+    }
+}
 
-    num_deleted
+// Clears the user table
+pub fn delete_all_users() -> Result<usize, diesel::result::Error> {
+    use self::schema::users::dsl::*;
+
+    let connection = establish_connection();
+
+    let result = diesel::delete(users).execute(&connection);
+
+    match result {
+        Ok(num_deleted) => {
+            println!("Deleted {} rows", num_deleted);
+            Ok(num_deleted)
+        }
+        Err(error) => {
+            println!("Error deleting users");
+            Err(error)
+        }
+    }
 }
