@@ -6,8 +6,6 @@
 
 ```bash
 $ docker-compose up
-$ IP=`docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' controller_db_1`
-$ source .env
-$ # The 'DATABASE_URL' should be changed to be:
-$ echo $DATABASE_URL_TMPL
+$ # Set the IP of the database URL to the returned IP address
+$ docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' <name-of-container>
 ```
