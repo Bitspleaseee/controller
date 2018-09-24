@@ -1,10 +1,9 @@
--- Your SQL goes here
-CREATE TABLE `categories` (
+CREATE TABLE categories (
 
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `title` VARCHAR(45) NOT NULL,
-  `description` TEXT NOT NULL,
-  `hidden` BOOLEAN NOT NULL DEFAULT 0,
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  title VARCHAR(45) NOT NULL,
+  description TEXT NOT NULL,
+  hidden BOOLEAN NOT NULL DEFAULT 0,
 
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (id)
 );
