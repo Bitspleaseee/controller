@@ -1,13 +1,17 @@
 version: '3.1'
 services:
+  controller:
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: "mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}"
+    build: .
   db:
     image: mariadb:10.3
-    env_file: .env
-    ports:
-      - 3306:3306
-  adminer:
-    image: adminer
-    ports:
-      - 8080:8080
+    environment:
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
 
 # vim:ts=2:sw=2
