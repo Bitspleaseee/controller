@@ -1,6 +1,7 @@
 use diesel::prelude::*;
+use log::*;
 
-use super::{establish_connection, log, models::User, Error};
+use super::{establish_connection, models::User, Error};
 
 /// Inserts new user into the user table
 pub fn insert_user(user_id: i32, user_name: &str) -> Result<User, Error> {
@@ -11,29 +12,26 @@ pub fn insert_user(user_id: i32, user_name: &str) -> Result<User, Error> {
         None => return Err(Error::Connection),
     };
 
-    log(&format!("Inserting user ({}:{})", user_id, user_name));
+    trace!("Inserting user ({}:{})", user_id, user_name);
 
     let result = diesel::insert_into(users)
         .values((id.eq(user_id), username.eq(user_name)))
         .execute(&connection);
 
     if result.is_err() {
-        log(&format!(
+        error!(
             "Error inserting user ({}:{}): {}",
             user_id,
             user_name,
             result.err().unwrap()
-        ));
+        );
         Err(Error::Database)
     } else {
         let result = users.filter(id.eq(user_id)).first::<User>(&connection);
 
         match result {
             Err(error) => {
-                log(&format!(
-                    "Error getting inserted user ({}): {}",
-                    user_id, error
-                ));
+                error!("Error getting inserted user ({}): {}", user_id, error);
                 Err(Error::Database)
             }
             Ok(user) => Ok(user),
@@ -45,7 +43,7 @@ pub fn insert_user(user_id: i32, user_name: &str) -> Result<User, Error> {
 fn get_user_con(connection: &diesel::MysqlConnection, user_id: i32) -> Result<User, Error> {
     use super::schema::users::dsl::{id, users};
 
-    log(&format!("Getting user ({})", user_id));
+    trace!("Getting user ({})", user_id);
 
     let result = users
         .filter(id.eq(user_id))
@@ -54,7 +52,7 @@ fn get_user_con(connection: &diesel::MysqlConnection, user_id: i32) -> Result<Us
 
     match result {
         Err(error) => {
-            log(&format!("Error getting user ({}): {}", user_id, error));
+            error!("Error getting user ({}): {}", user_id, error);
             Err(Error::Database)
         }
         Ok(row) => match row {
@@ -83,7 +81,7 @@ pub fn delete_user(user_id: i32) -> Result<usize, Error> {
         None => return Err(Error::Connection),
     };
 
-    log(&format!("Deleting user ({})", user_id));
+    trace!("Deleting user ({})", user_id);
 
     let result = diesel::delete(users)
         .filter(id.eq(user_id))
@@ -98,7 +96,7 @@ pub fn delete_user(user_id: i32) -> Result<usize, Error> {
             }
         }
         Err(error) => {
-            log(&format!("Error deleting user ({}): {}", user_id, error));
+            error!("Error deleting user ({}): {}", user_id, error);
             Err(Error::Database)
         }
     }
@@ -113,14 +111,14 @@ pub fn delete_all_users() -> Result<usize, Error> {
         None => return Err(Error::Connection),
     };
 
-    log("Deleting all users");
+    trace!("Deleting all users");
 
     let result = diesel::delete(users).execute(&connection);
 
     match result {
         Ok(num_deleted) => Ok(num_deleted),
         Err(error) => {
-            log(&format!("Error deleting all users: {}", error));
+            error!("Error deleting all users: {}", error);
             Err(Error::Database)
         }
     }
@@ -141,7 +139,7 @@ fn get_update_result(
             }
         }
         Err(error) => {
-            log(&format!("Error updating user ({}): {}", user_id, error));
+            error!("Error updating user ({}): {}", user_id, error);
             Err(Error::Database)
         }
     }
@@ -156,7 +154,7 @@ pub fn update_user(user: &User) -> Result<User, Error> {
         None => return Err(Error::Connection),
     };
 
-    log(&format!("Updating user ({}:{})", user.id, user.username));
+    trace!("Updating user ({}:{})", user.id, user.username);
 
     let result = diesel::update(users)
         .set(user)
@@ -175,7 +173,7 @@ pub fn update_user_username(user_id: i32, new_username: &str) -> Result<User, Er
         None => return Err(Error::Connection),
     };
 
-    log(&format!("Updating user username ({})", user_id));
+    trace!("Updating user username ({})", user_id);
 
     let result = diesel::update(users)
         .set(username.eq(new_username))
@@ -194,7 +192,7 @@ pub fn update_user_description(user_id: i32, new_description: &str) -> Result<Us
         None => return Err(Error::Connection),
     };
 
-    log(&format!("Updating user description ({})", user_id));
+    trace!("Updating user description ({})", user_id);
 
     let result = diesel::update(users)
         .set(description.eq(new_description))
@@ -213,7 +211,7 @@ pub fn update_user_avatar(user_id: i32, new_avatar: &str) -> Result<User, Error>
         None => return Err(Error::Connection),
     };
 
-    log(&format!("Updating user avatar flag ({})", user_id));
+    trace!("Updating user avatar flag ({})", user_id);
 
     let result = diesel::update(users)
         .set(avatar.eq(new_avatar))

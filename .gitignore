@@ -25,3 +25,6 @@
 
 # Environment variables
 .env
+
+# Controller log file
+controller.log

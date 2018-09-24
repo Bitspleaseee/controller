@@ -1,6 +1,7 @@
 use diesel::prelude::*;
+use log::*;
 
-use super::{establish_connection, log, models::Category, Error};
+use super::{establish_connection, models::Category, Error};
 
 /// Inserts a new category into the category table
 pub fn insert_category(new_title: &str, new_description: &str) -> Result<Category, Error> {
@@ -11,7 +12,7 @@ pub fn insert_category(new_title: &str, new_description: &str) -> Result<Categor
         None => return Err(Error::Connection),
     };
 
-    log(&format!("Inserting category: {}", new_title));
+    trace!("Inserting category: {}", new_title);
 
     let result = diesel::insert_into(categories)
         .values((title.eq(new_title), description.eq(new_description)))
@@ -23,10 +24,7 @@ pub fn insert_category(new_title: &str, new_description: &str) -> Result<Categor
             None => Err(Error::NotFound),
         },
         Err(error) => {
-            log(&format!(
-                "Error inserting category ({}): {}",
-                new_title, error
-            ));
+            error!("Error inserting category ({}): {}", new_title, error);
             Err(Error::Database)
         }
     }
@@ -39,7 +37,7 @@ fn get_category_con(
 ) -> Result<Category, Error> {
     use super::schema::categories::dsl::{categories, id};
 
-    log(&format!("Getting category ({})", category_id));
+    trace!("Getting category ({})", category_id);
 
     let result = categories
         .filter(id.eq(category_id))
@@ -48,10 +46,7 @@ fn get_category_con(
 
     match result {
         Err(error) => {
-            log(&format!(
-                "Error getting category ({}): {}",
-                category_id, error
-            ));
+            error!("Error getting category ({}): {}", category_id, error);
             Err(Error::Database)
         }
         Ok(row) => match row {
@@ -80,10 +75,7 @@ pub fn get_all_categories(include_hidden: bool) -> Result<Vec<Category>, Error> 
         None => return Err(Error::Connection),
     };
 
-    log(&format!(
-        "Getting all categories, include hidden: {}",
-        include_hidden
-    ));
+    trace!("Getting all categories, include hidden: {}", include_hidden);
 
     let result = if include_hidden {
         categories.get_results(&connection)
@@ -94,7 +86,7 @@ pub fn get_all_categories(include_hidden: bool) -> Result<Vec<Category>, Error> 
     match result {
         Ok(rows) => Ok(rows),
         Err(error) => {
-            log(&format!("Error getting all categories: {}", error));
+            error!("Error getting all categories: {}", error);
             Err(Error::Database)
         }
     }
@@ -109,14 +101,14 @@ pub fn delete_all_categories() -> Result<usize, Error> {
         None => return Err(Error::Connection),
     };
 
-    log("Deleting all categories");
+    trace!("Deleting all categories");
 
     let result = diesel::delete(categories).execute(&connection);
 
     match result {
         Ok(num_deleted) => Ok(num_deleted),
         Err(error) => {
-            log(&format!("Error deleting all categories: {}", error));
+            error!("Error deleting all categories: {}", error);
             Err(Error::Database)
         }
     }
@@ -137,10 +129,7 @@ fn get_update_result(
             }
         }
         Err(error) => {
-            log(&format!(
-                "Error updating category ({}): {}",
-                category_id, error
-            ));
+            error!("Error updating category ({}): {}", category_id, error);
             Err(Error::Database)
         }
     }
@@ -155,10 +144,7 @@ pub fn update_category(category: &Category) -> Result<Category, Error> {
         None => return Err(Error::Connection),
     };
 
-    log(&format!(
-        "Updating category ({}:{})",
-        category.id, category.title
-    ));
+    trace!("Updating category ({}:{})", category.id, category.title);
 
     let result = diesel::update(categories)
         .set(category)
@@ -177,7 +163,7 @@ pub fn update_category_title(category_id: i32, new_title: &str) -> Result<Catego
         None => return Err(Error::Connection),
     };
 
-    log(&format!("Updating category title ({})", category_id));
+    trace!("Updating category title ({})", category_id);
 
     let result = diesel::update(categories)
         .set(title.eq(new_title))
@@ -199,7 +185,7 @@ pub fn update_category_description(
         None => return Err(Error::Connection),
     };
 
-    log(&format!("Updating category description ({})", category_id));
+    trace!("Updating category description ({})", category_id);
 
     let result = diesel::update(categories)
         .set(description.eq(new_description))
@@ -218,7 +204,7 @@ pub fn update_category_hidden(category_id: i32, new_hidden: bool) -> Result<Cate
         None => return Err(Error::Connection),
     };
 
-    log(&format!("Updating category hidden flag ({})", category_id));
+    trace!("Updating category hidden flag ({})", category_id);
 
     let result = diesel::update(categories)
         .set(hidden.eq(new_hidden))

@@ -1,5 +1,6 @@
 use diesel::prelude::*;
 use dotenv::dotenv;
+use log::*;
 use std::env;
 use std::fmt;
 
@@ -25,11 +26,6 @@ impl fmt::Debug for Error {
     }
 }
 
-/// Log string
-fn log(text: &str) {
-    println!("{}", text);
-}
-
 /// Establishes a connection to the db
 pub fn establish_connection() -> Option<MysqlConnection> {
     dotenv().ok();
@@ -40,7 +36,7 @@ pub fn establish_connection() -> Option<MysqlConnection> {
     let connection = MysqlConnection::establish(&database_url);
 
     if connection.is_err() {
-        log("Failed to connect to db");
+        error!("Failed to connect to db");
         return None;
     }
 
