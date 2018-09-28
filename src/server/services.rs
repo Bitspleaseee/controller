@@ -14,27 +14,37 @@ service! {
 impl FutureService for Server {
     type GetUserFut = CpuFuture<Option<User>, Never>;
 
+    // TODO convert internal error into external error instead of
+    // returning `None`
     fn get_user(&self, id: i32) -> Self::GetUserFut {
         let cloned_pool = self.db_pool.clone();
-        self.pool
-            .spawn(futures::lazy(move || match cloned_pool.get() {
-                Ok(con) => Ok(db::users::get_user(&con, id).ok()),
-                // TODO convert internal error into external error instead of
-                // returning `None`
-                Err(_) => Ok(None),
-            }))
+        let f = futures::lazy(move || {
+            cloned_pool
+                .get()
+                .map(|con| {
+                    db::users::get_user(&con, id)
+                        .map_err(|e| error!("{}", e))
+                        .ok()
+                }).or(Ok(None))
+        });
+        self.pool.spawn(f)
     }
 
     type InsertUserFut = CpuFuture<Option<User>, Never>;
 
+    // TODO convert internal error into external error instead of
+    // returning `None`
     fn insert_user(&self, user: NewUser) -> Self::InsertUserFut {
         let cloned_pool = self.db_pool.clone();
-        self.pool
-            .spawn(futures::lazy(move || match cloned_pool.get() {
-                Ok(con) => Ok(db::users::insert_user(&con, user.id, &user.username).ok()),
-                // TODO convert internal error into external error instead of
-                // returning `None`
-                Err(_) => Ok(None),
-            }))
+        let f = futures::lazy(move || {
+            cloned_pool
+                .get()
+                .map(|con| {
+                    db::users::insert_user(&con, user.id, &user.username)
+                        .map_err(|e| error!("{}", e))
+                        .ok()
+                }).or(Ok(None))
+        });
+        self.pool.spawn(f)
     }
 }
