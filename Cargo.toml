@@ -13,6 +13,8 @@ chrono = "0.4.6"
 clap = "2.32.0"
 serde = "1.0"
 serde_derive = "1.0.79"
+failure = "0.1.2"
+failure_derive = "0.1.2"
 tarpc = { git = "https://github.com/google/tarpc.git", branch = "master" }
 tarpc-plugins = { git = "https://github.com/google/tarpc", rev = "5e4b97e" }
 tokio-core = "0.1.17"

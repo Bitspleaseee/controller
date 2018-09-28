@@ -19,6 +19,8 @@ impl FutureService for Server {
         self.pool
             .spawn(futures::lazy(move || match cloned_pool.get() {
                 Ok(con) => Ok(db::users::get_user(&con, id).ok()),
+                // TODO convert internal error into external error instead of
+                // returning `None`
                 Err(_) => Ok(None),
             }))
     }
@@ -30,6 +32,8 @@ impl FutureService for Server {
         self.pool
             .spawn(futures::lazy(move || match cloned_pool.get() {
                 Ok(con) => Ok(db::users::insert_user(&con, user.id, &user.username).ok()),
+                // TODO convert internal error into external error instead of
+                // returning `None`
                 Err(_) => Ok(None),
             }))
     }

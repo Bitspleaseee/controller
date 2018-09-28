@@ -19,13 +19,12 @@ pub fn setup_logging(verbosity: u64) -> Result<(), fern::InitError> {
                 record.level(),
                 message
             ))
-        })
-        .chain(fern::log_file("controller.log")?);
+        }).chain(fern::log_file("controller.log")?);
 
     let stdout_config = fern::Dispatch::new()
         .format(|out, message, record| {
             // special format for debug messages coming from our own crate.
-            if record.level() > log::LevelFilter::Info && record.target() == "cmd_program" {
+            if record.level() > log::LevelFilter::Info && record.target() == "controller" {
                 out.finish(format_args!(
                     "---\nDEBUG: {}: {}\n---",
                     chrono::Local::now().format("%H:%M:%S"),
@@ -40,8 +39,7 @@ pub fn setup_logging(verbosity: u64) -> Result<(), fern::InitError> {
                     message
                 ))
             }
-        })
-        .chain(io::stdout());
+        }).chain(io::stdout());
 
     base_config
         .chain(file_config)

@@ -1,138 +1,90 @@
 use diesel::prelude::*;
-use log::*;
+use failure::ResultExt;
 
-use super::super::types::User;
-use super::{DbConn, Error};
+use super::DbConn;
+use crate::types::User;
+use crate::{IntErrorKind, IntResult};
 
 /// Inserts new user into the user table
-pub fn insert_user(connection: &DbConn, user_id: i32, user_name: &str) -> Result<User, Error> {
+pub fn insert_user(connection: &DbConn, user_id: i32, user_name: &str) -> IntResult<User> {
     use super::schema::users::dsl::{id, username, users};
 
     trace!("Inserting user ({}:{})", user_id, user_name);
 
-    let result = diesel::insert_into(users)
+    diesel::insert_into(users)
         .values((id.eq(user_id), username.eq(user_name)))
-        .execute(connection);
-
-    if result.is_err() {
-        error!(
-            "Error inserting user ({}:{}): {}",
-            user_id,
-            user_name,
-            result.err().unwrap()
-        );
-        Err(Error::Database)
-    } else {
-        let result = users.filter(id.eq(user_id)).first::<User>(connection);
-
-        match result {
-            Err(error) => {
-                error!("Error getting inserted user ({}): {}", user_id, error);
-                Err(Error::Database)
-            }
-            Ok(user) => Ok(user),
-        }
-    }
+        .execute(connection)
+        .context(IntErrorKind::QueryError)
+        .and_then(|_| {
+            users
+                .filter(id.eq(user_id))
+                .first::<User>(connection)
+                .context(IntErrorKind::QueryError)
+        }).map_err(|e| e.into())
 }
 
 /// Gets an exisiting user from the user table
-pub fn get_user(connection: &DbConn, user_id: i32) -> Result<User, Error> {
+pub fn get_user(connection: &DbConn, user_id: i32) -> IntResult<User> {
     use super::schema::users::dsl::{id, users};
 
     trace!("Getting user ({})", user_id);
 
-    let result = users
+    users
         .filter(id.eq(user_id))
         .first::<User>(connection)
-        .optional();
-
-    match result {
-        Err(error) => {
-            error!("Error getting user ({}): {}", user_id, error);
-            Err(Error::Database)
-        }
-        Ok(row) => match row {
-            None => Err(Error::NotFound),
-            Some(user) => Ok(user),
-        },
-    }
+        .optional()
+        .context(IntErrorKind::QueryError)?
+        .ok_or(IntErrorKind::ContentNotFound)
+        .map_err(|e| e.into())
 }
 
 /// Deletes an existing user from the user table
-pub fn delete_user(connection: &DbConn, user_id: i32) -> Result<usize, Error> {
+pub fn delete_user(connection: &DbConn, user_id: i32) -> IntResult<usize> {
     use super::schema::users::dsl::{id, users};
 
     trace!("Deleting user ({})", user_id);
 
-    let result = diesel::delete(users)
+    let num_deleted = diesel::delete(users)
         .filter(id.eq(user_id))
-        .execute(connection);
+        .execute(connection)
+        .context(IntErrorKind::QueryError)?;
 
-    match result {
-        Ok(num_deleted) => {
-            if num_deleted == 0 {
-                Err(Error::NotFound)
-            } else {
-                Ok(num_deleted)
-            }
-        }
-        Err(error) => {
-            error!("Error deleting user ({}): {}", user_id, error);
-            Err(Error::Database)
-        }
+    if num_deleted == 0 {
+        Err(IntErrorKind::ContentNotFound)?
+    } else {
+        Ok(num_deleted)
     }
 }
 
 /// Clears the user table
-pub fn delete_all_users(connection: &DbConn) -> Result<usize, Error> {
+pub fn delete_all_users(connection: &DbConn) -> IntResult<usize> {
     use super::schema::users::dsl::users;
 
     trace!("Deleting all users");
 
-    let result = diesel::delete(users).execute(connection);
-
-    match result {
-        Ok(num_deleted) => Ok(num_deleted),
-        Err(error) => {
-            error!("Error deleting all users: {}", error);
-            Err(Error::Database)
-        }
-    }
-}
-
-/// Gets the updated user or an error based on the result of the update statement
-fn get_update_result(
-    result: Result<usize, diesel::result::Error>,
-    connection: &DbConn,
-    user_id: i32,
-) -> Result<User, Error> {
-    match result {
-        Ok(num_updated) => {
-            if num_updated == 0 {
-                Err(Error::NotFound)
-            } else {
-                get_user(connection, user_id)
-            }
-        }
-        Err(error) => {
-            error!("Error updating user ({}): {}", user_id, error);
-            Err(Error::Database)
-        }
-    }
+    diesel::delete(users)
+        .execute(connection)
+        .context(IntErrorKind::QueryError)
+        .map_err(|e| e.into())
 }
 
 /// Updates an existing user in the user table
-pub fn update_user(connection: &DbConn, user: &User) -> Result<User, Error> {
+pub fn update_user(connection: &DbConn, user: &User) -> IntResult<User> {
     use super::schema::users::dsl::{id, users};
 
     trace!("Updating user ({}:{})", user.id, user.username);
 
-    let result = diesel::update(users)
+    let num_updated = diesel::update(users)
         .set(user)
         .filter(id.eq(user.id))
-        .execute(connection);
+        .execute(connection)
+        .context(IntErrorKind::QueryError)?;
 
-    get_update_result(result, connection, user.id)
+    if num_updated == 0 {
+        Err(IntErrorKind::ContentNotFound)?
+    } else {
+        get_user(connection, user.id)
+    }
 }
 
 /// Updates the title for an existing user in the user table
@@ -140,17 +92,22 @@ pub fn update_user_username(
     connection: &DbConn,
     user_id: i32,
     new_username: &str,
-) -> Result<User, Error> {
+) -> IntResult<User> {
     use super::schema::users::dsl::{id, username, users};
 
     trace!("Updating user username ({})", user_id);
 
-    let result = diesel::update(users)
+    let num_updated = diesel::update(users)
         .set(username.eq(new_username))
         .filter(id.eq(user_id))
-        .execute(connection);
+        .execute(connection)
+        .context(IntErrorKind::QueryError)?;
 
-    get_update_result(result, connection, user_id)
+    if num_updated == 0 {
+        Err(IntErrorKind::ContentNotFound)?
+    } else {
+        get_user(connection, user_id)
+    }
 }
 
 /// Updates the description for an existing user in the user table
@@ -158,33 +115,39 @@ pub fn update_user_description(
     connection: &DbConn,
     user_id: i32,
     new_description: &str,
-) -> Result<User, Error> {
+) -> IntResult<User> {
     use super::schema::users::dsl::{description, id, users};
 
     trace!("Updating user description ({})", user_id);
 
-    let result = diesel::update(users)
+    let num_updated = diesel::update(users)
         .set(description.eq(new_description))
         .filter(id.eq(user_id))
-        .execute(connection);
+        .execute(connection)
+        .context(IntErrorKind::QueryError)?;
 
-    get_update_result(result, connection, user_id)
+    if num_updated == 0 {
+        Err(IntErrorKind::ContentNotFound)?
+    } else {
+        get_user(connection, user_id)
+    }
 }
 
 /// Updates the hidden flag for an existing user in the user table
-pub fn update_user_avatar(
-    connection: &DbConn,
-    user_id: i32,
-    new_avatar: &str,
-) -> Result<User, Error> {
+pub fn update_user_avatar(connection: &DbConn, user_id: i32, new_avatar: &str) -> IntResult<User> {
     use super::schema::users::dsl::{avatar, id, users};
 
     trace!("Updating user avatar flag ({})", user_id);
 
-    let result = diesel::update(users)
+    let num_updated = diesel::update(users)
         .set(avatar.eq(new_avatar))
         .filter(id.eq(user_id))
-        .execute(connection);
+        .execute(connection)
+        .context(IntErrorKind::QueryError)?;
 
-    get_update_result(result, connection, user_id)
+    if num_updated == 0 {
+        Err(IntErrorKind::ContentNotFound)?
+    } else {
+        get_user(connection, user_id)
+    }
 }

@@ -1,44 +1,50 @@
 mod services;
 use self::services::*;
 
+use failure::ResultExt;
 use futures_cpupool::CpuPool;
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 use tarpc::future::server;
-use tarpc::util::FirstSocketAddr;
 use tokio_core::reactor;
 
 use super::db::{setup_connection_pool, DbPool};
+use std::net::SocketAddr;
 
+use crate::{IntErrorKind, IntResult};
+
+/// A server which receives requests through tarpc and then performes queries
+/// to the MySQL database
 #[derive(Clone)]
-struct Server {
+pub struct Server {
     pool: CpuPool,
     request_count: Arc<AtomicUsize>,
     db_pool: DbPool,
 }
 
 impl Server {
-    fn new() -> Self {
-        Server {
+    /// Try to make a new server by creating a connection pool to the database
+    pub fn try_new(database_url: &str) -> IntResult<Self> {
+        let db_pool = setup_connection_pool(database_url)?;
+
+        Ok(Server {
             pool: CpuPool::new_num_cpus(),
             request_count: Arc::new(AtomicUsize::new(1)),
-            db_pool: setup_connection_pool(),
-        }
+            db_pool,
+        })
     }
-}
 
-pub fn start_server() {
-    let mut reactor = reactor::Core::new().unwrap();
-    let (handle, server) = Server::new()
-        .listen(
-            "localhost:10000".first_socket_addr(),
-            &reactor.handle(),
-            server::Options::default(),
-        )
-        .unwrap();
+    /// Run the current server on the given socket address
+    pub fn run(self, addr: SocketAddr) -> IntResult<()> {
+        let mut reactor = reactor::Core::new().context(IntErrorKind::ServerError)?;
 
-    println!("Starting server on {}", handle.addr());
-    reactor.run(server).unwrap();
+        let (_handle, server) = self
+            .listen(addr, &reactor.handle(), server::Options::default())
+            .context(IntErrorKind::ServerError)?;
 
-    println!("Shuting down server");
+        info!("Starting server on {}", addr);
+        reactor.run(server).map_err(|_| IntErrorKind::ServerError)?;
+        info!("Shuting down server");
+        Ok(())
+    }
 }
