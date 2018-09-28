@@ -1,26 +1,25 @@
-use super::super::types::Category;
 use diesel::prelude::*;
 use log::*;
 
-use super::{establish_connection, Error};
+use super::super::types::Category;
+use super::{DbConn, Error};
 
 /// Inserts a new category into the category table
-pub fn insert_category(new_title: &str, new_description: &str) -> Result<Category, Error> {
+pub fn insert_category(
+    connection: &DbConn,
+    new_title: &str,
+    new_description: &str,
+) -> Result<Category, Error> {
     use super::schema::categories::dsl::{categories, description, id, title};
-
-    let connection = match establish_connection() {
-        Some(con) => con,
-        None => return Err(Error::Connection),
-    };
 
     trace!("Inserting category: {}", new_title);
 
     let result = diesel::insert_into(categories)
         .values((title.eq(new_title), description.eq(new_description)))
-        .execute(&connection);
+        .execute(connection);
 
     match result {
-        Ok(_) => match categories.order(id.desc()).first(&connection).ok() {
+        Ok(_) => match categories.order(id.desc()).first(connection).ok() {
             Some(user) => Ok(user),
             None => Err(Error::NotFound),
         },
@@ -32,10 +31,7 @@ pub fn insert_category(new_title: &str, new_description: &str) -> Result<Categor
 }
 
 /// Gets an exisiting category from the category table
-fn get_category_con(
-    connection: &diesel::MysqlConnection,
-    category_id: i32,
-) -> Result<Category, Error> {
+fn get_category_con(connection: &DbConn, category_id: i32) -> Result<Category, Error> {
     use super::schema::categories::dsl::{categories, id};
 
     trace!("Getting category ({})", category_id);
@@ -57,31 +53,19 @@ fn get_category_con(
     }
 }
 
-/// Gets an exisiting category from the category table
-pub fn get_category(category_id: i32) -> Result<Category, Error> {
-    let connection = match establish_connection() {
-        Some(con) => con,
-        None => return Err(Error::Connection),
-    };
-
-    get_category_con(&connection, category_id)
-}
-
 /// Gets all the categories from the category table
-pub fn get_all_categories(include_hidden: bool) -> Result<Vec<Category>, Error> {
+pub fn get_all_categories(
+    connection: &DbConn,
+    include_hidden: bool,
+) -> Result<Vec<Category>, Error> {
     use super::schema::categories::dsl::{categories, hidden};
-
-    let connection = match establish_connection() {
-        Some(con) => con,
-        None => return Err(Error::Connection),
-    };
 
     trace!("Getting all categories, include hidden: {}", include_hidden);
 
     let result = if include_hidden {
-        categories.get_results(&connection)
+        categories.get_results(connection)
     } else {
-        categories.filter(hidden.eq(false)).get_results(&connection)
+        categories.filter(hidden.eq(false)).get_results(connection)
     };
 
     match result {
@@ -94,17 +78,12 @@ pub fn get_all_categories(include_hidden: bool) -> Result<Vec<Category>, Error> 
 }
 
 /// Clears the category table
-pub fn delete_all_categories() -> Result<usize, Error> {
+pub fn delete_all_categories(connection: &DbConn) -> Result<usize, Error> {
     use super::schema::categories::dsl::categories;
-
-    let connection = match establish_connection() {
-        Some(con) => con,
-        None => return Err(Error::Connection),
-    };
 
     trace!("Deleting all categories");
 
-    let result = diesel::delete(categories).execute(&connection);
+    let result = diesel::delete(categories).execute(connection);
 
     match result {
         Ok(num_deleted) => Ok(num_deleted),
@@ -118,7 +97,7 @@ pub fn delete_all_categories() -> Result<usize, Error> {
 /// Gets the updated category or an error based on the result of the update statement
 fn get_update_result(
     result: Result<usize, diesel::result::Error>,
-    connection: &diesel::MysqlConnection,
+    connection: &DbConn,
     category_id: i32,
 ) -> Result<Category, Error> {
     match result {
@@ -137,80 +116,69 @@ fn get_update_result(
 }
 
 /// Updates an existing category in the category table
-pub fn update_category(category: &Category) -> Result<Category, Error> {
+pub fn update_category(connection: &DbConn, category: &Category) -> Result<Category, Error> {
     use super::schema::categories::dsl::{categories, id};
-
-    let connection = match establish_connection() {
-        Some(con) => con,
-        None => return Err(Error::Connection),
-    };
 
     trace!("Updating category ({}:{})", category.id, category.title);
 
     let result = diesel::update(categories)
         .set(category)
         .filter(id.eq(category.id))
-        .execute(&connection);
+        .execute(connection);
 
-    get_update_result(result, &connection, category.id)
+    get_update_result(result, connection, category.id)
 }
 
 /// Updates the title for an existing category in the category table
-pub fn update_category_title(category_id: i32, new_title: &str) -> Result<Category, Error> {
+pub fn update_category_title(
+    connection: &DbConn,
+    category_id: i32,
+    new_title: &str,
+) -> Result<Category, Error> {
     use super::schema::categories::dsl::{categories, id, title};
-
-    let connection = match establish_connection() {
-        Some(con) => con,
-        None => return Err(Error::Connection),
-    };
 
     trace!("Updating category title ({})", category_id);
 
     let result = diesel::update(categories)
         .set(title.eq(new_title))
         .filter(id.eq(category_id))
-        .execute(&connection);
+        .execute(connection);
 
-    get_update_result(result, &connection, category_id)
+    get_update_result(result, connection, category_id)
 }
 
 /// Updates the description for an existing category in the category table
 pub fn update_category_description(
+    connection: &DbConn,
     category_id: i32,
     new_description: &str,
 ) -> Result<Category, Error> {
     use super::schema::categories::dsl::{categories, description, id};
-
-    let connection = match establish_connection() {
-        Some(con) => con,
-        None => return Err(Error::Connection),
-    };
 
     trace!("Updating category description ({})", category_id);
 
     let result = diesel::update(categories)
         .set(description.eq(new_description))
         .filter(id.eq(category_id))
-        .execute(&connection);
+        .execute(connection);
 
-    get_update_result(result, &connection, category_id)
+    get_update_result(result, connection, category_id)
 }
 
 /// Updates the hidden flag for an existing category in the category table
-pub fn update_category_hidden(category_id: i32, new_hidden: bool) -> Result<Category, Error> {
+pub fn update_category_hidden(
+    connection: &DbConn,
+    category_id: i32,
+    new_hidden: bool,
+) -> Result<Category, Error> {
     use super::schema::categories::dsl::{categories, hidden, id};
-
-    let connection = match establish_connection() {
-        Some(con) => con,
-        None => return Err(Error::Connection),
-    };
 
     trace!("Updating category hidden flag ({})", category_id);
 
     let result = diesel::update(categories)
         .set(hidden.eq(new_hidden))
         .filter(id.eq(category_id))
-        .execute(&connection);
+        .execute(connection);
 
-    get_update_result(result, &connection, category_id)
+    get_update_result(result, connection, category_id)
 }

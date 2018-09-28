@@ -25,6 +25,7 @@ pub mod server;
 pub mod types;
 
 use self::db::categories::*;
+use self::db::establish_connection;
 use self::db::users::*;
 
 use log::*;
@@ -48,8 +49,9 @@ fn main() {
     info!("Starting program");
 
     // Clear db
-    delete_all_users().expect("Error clearing user table");
-    delete_all_categories().expect("Error clearing category table");
+    let conn = establish_connection().unwrap();
+    delete_all_users(&conn).expect("Error clearing user table");
+    delete_all_categories(&conn).expect("Error clearing category table");
 
     // Server
     server::start_server();

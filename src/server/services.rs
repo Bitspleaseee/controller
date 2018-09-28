@@ -18,7 +18,7 @@ impl FutureService for Server {
         let cloned_pool = self.db_pool.clone();
         self.pool
             .spawn(futures::lazy(move || match cloned_pool.get() {
-                Ok(con) => Ok(db::users::get_user_con_pool(&con, id).ok()),
+                Ok(con) => Ok(db::users::get_user(&con, id).ok()),
                 Err(_) => Ok(None),
             }))
     }
@@ -26,8 +26,11 @@ impl FutureService for Server {
     type InsertUserFut = CpuFuture<Option<User>, Never>;
 
     fn insert_user(&self, user: NewUser) -> Self::InsertUserFut {
-        self.pool.spawn(futures::lazy(move || {
-            Ok(db::users::insert_user(user.id, &user.username).ok())
-        }))
+        let cloned_pool = self.db_pool.clone();
+        self.pool
+            .spawn(futures::lazy(move || match cloned_pool.get() {
+                Ok(con) => Ok(db::users::insert_user(&con, user.id, &user.username).ok()),
+                Err(_) => Ok(None),
+            }))
     }
 }

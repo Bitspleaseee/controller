@@ -18,10 +18,8 @@ pub enum Error {
     NotFound,
 }
 
+pub type DbConn = MysqlConnection;
 pub type DbPool = diesel::r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::MysqlConnection>>;
-
-pub type DbPoolCon =
-    diesel::r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::MysqlConnection>>;
 
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
