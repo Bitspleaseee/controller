@@ -1,7 +1,8 @@
+use super::super::types::Category;
 use diesel::prelude::*;
 use log::*;
 
-use super::{establish_connection, models::Category, Error};
+use super::{establish_connection, Error};
 
 /// Inserts a new category into the category table
 pub fn insert_category(new_title: &str, new_description: &str) -> Result<Category, Error> {

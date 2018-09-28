@@ -1,7 +1,7 @@
+use super::super::types::User;
+use super::{establish_connection, DbPoolCon, Error};
 use diesel::prelude::*;
 use log::*;
-
-use super::{establish_connection, models::User, Error};
 
 /// Inserts new user into the user table
 pub fn insert_user(user_id: i32, user_name: &str) -> Result<User, Error> {
@@ -40,7 +40,29 @@ pub fn insert_user(user_id: i32, user_name: &str) -> Result<User, Error> {
 }
 
 /// Gets an exisiting user from the user table
-fn get_user_con(connection: &diesel::MysqlConnection, user_id: i32) -> Result<User, Error> {
+pub fn get_user_con(connection: &diesel::MysqlConnection, user_id: i32) -> Result<User, Error> {
+    use super::schema::users::dsl::{id, users};
+
+    trace!("Getting user ({})", user_id);
+
+    let result = users
+        .filter(id.eq(user_id))
+        .first::<User>(connection)
+        .optional();
+
+    match result {
+        Err(error) => {
+            error!("Error getting user ({}): {}", user_id, error);
+            Err(Error::Database)
+        }
+        Ok(row) => match row {
+            None => Err(Error::NotFound),
+            Some(user) => Ok(user),
+        },
+    }
+}
+/// Gets an exisiting user from the user table
+pub fn get_user_con_pool(connection: &DbPoolCon, user_id: i32) -> Result<User, Error> {
     use super::schema::users::dsl::{id, users};
 
     trace!("Getting user ({})", user_id);

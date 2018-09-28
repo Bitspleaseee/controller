@@ -4,8 +4,10 @@ use log::*;
 use std::env;
 use std::fmt;
 
+use diesel::mysql::MysqlConnection;
+use diesel::r2d2::{self, ConnectionManager};
+
 pub mod categories;
-pub mod models;
 pub mod schema;
 pub mod users;
 
@@ -15,6 +17,11 @@ pub enum Error {
     Database,
     NotFound,
 }
+
+pub type DbPool = diesel::r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::MysqlConnection>>;
+
+pub type DbPoolCon =
+    diesel::r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::MysqlConnection>>;
 
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -41,4 +48,12 @@ pub fn establish_connection() -> Option<MysqlConnection> {
     }
 
     connection.ok()
+}
+
+pub fn setup_connection_pool() -> DbPool {
+    let database_url =
+        env::var("DATABASE_URL").unwrap_or_else(|_| panic!("DATABASE_URL must be set"));
+    let manager = ConnectionManager::<MysqlConnection>::new(database_url);
+    let diesel_db_config = r2d2::Pool::builder();
+    diesel_db_config.build(manager).unwrap()
 }

@@ -19,7 +19,8 @@ pub fn setup_logging(verbosity: u64) -> Result<(), fern::InitError> {
                 record.level(),
                 message
             ))
-        }).chain(fern::log_file("controller.log")?);
+        })
+        .chain(fern::log_file("controller.log")?);
 
     let stdout_config = fern::Dispatch::new()
         .format(|out, message, record| {
@@ -39,7 +40,8 @@ pub fn setup_logging(verbosity: u64) -> Result<(), fern::InitError> {
                     message
                 ))
             }
-        }).chain(io::stdout());
+        })
+        .chain(io::stdout());
 
     base_config
         .chain(file_config)
