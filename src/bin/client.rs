@@ -68,8 +68,7 @@ fn main() {
                             Some(value) => println!("The server responded with: {:#?}", value),
                             None => println!("The server responded with: No user"),
                         }),
-                )
-                .unwrap();
+                ).unwrap();
         } else if cmd == "i" {
             // Insert
 
@@ -100,8 +99,7 @@ fn main() {
                             Some(value) => println!("The server responded with: {:#?}", value),
                             None => println!("The server responded with: No user"),
                         }),
-                )
-                .unwrap();
+                ).unwrap();
         }
     }
 }
