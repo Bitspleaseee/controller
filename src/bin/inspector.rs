@@ -1,4 +1,6 @@
 #![feature(plugin)]
+#![feature(try_from)]
+#![feature(try_trait)]
 #![plugin(tarpc_plugins)]
 
 #[macro_use]
@@ -16,8 +18,8 @@ use tarpc::future::client;
 use tarpc::future::client::ClientExt;
 use tarpc::util::FirstSocketAddr;
 use tokio_core::reactor;
-
-use std::io;
+use std::default::Default;
+use std::convert::{TryFrom, TryInto};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
@@ -33,38 +35,109 @@ pub struct NewUser {
     pub username: String,
 }
 
+impl NewUser {
+    pub fn new(id: i32, n: impl Into<String>) -> NewUser {
+        NewUser {
+            id,
+            username: n.into()
+        }
+    }
+}
+
 service! {
     rpc get_user(id: i32) -> Option<User>;
     rpc insert_user(user: NewUser) -> Option<User>;
 }
 
-const MODES: &[&str] = &["main", "users", "category"];
+pub enum Cmd {
+    Get,
+    Insert,
+}
+
+impl TryFrom<&str> for Cmd {
+    type Error = ();
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        use self::Cmd::*;
+        match s {
+            "get" => Ok(Get),
+            "insert" => Ok(Insert),
+            _ => Err(())
+        }
+    }
+}
+
+pub enum Mode {
+    Main,
+    Users,
+    Categories,
+}
+
+impl TryFrom<&str> for Mode {
+    type Error = ();
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        use self::Mode::*;
+        match s {
+            "main" => Ok(Main),
+            "users" => Ok(Users),
+            "categories" => Ok(Categories),
+            _ => Err(())
+        }
+    }
+}
+
+impl Mode {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Mode::Main => "main",
+            Mode::Users => "users",
+            Mode::Categories => "categories"
+        }
+    }
+}
+
+pub struct State {
+    mode: Mode
+}
+
+impl State {
+    pub fn try_set_mode(&mut self, maybe_mode: impl TryInto<Mode>) -> Option<Mode> {
+        maybe_mode
+            .try_into()
+            .ok()
+            .map(|new_mode| std::mem::replace(&mut self.mode, new_mode))
+    }
+}
+
+impl Default for State {
+    fn default() -> State {
+        State {
+            mode: Mode::Main
+        }
+    }
+}
+
 
 fn main() {
     let mut reactor = reactor::Core::new().unwrap();
+    let mut state = State::default();
 
     let mut rl = Editor::<()>::new();
     if rl.load_history("history.txt").is_err() {
         println!("No previous history.");
     }
-
-    let mut mode: String = "main".into();
     loop {
-        let readline = rl.readline(&format!("{} >> ", mode));
+        let readline = rl.readline(&format!("{} >> ", state.mode.as_str()));
         match readline {
             Ok(line) => {
                 rl.add_history_entry(line.as_ref());
                 // Change between databases ol.
                 if line.starts_with("mode") {
-                    let new_mode = line.split(char::is_whitespace)
-                        .nth(1).unwrap_or("main");
-                    if MODES.iter().find(|m| *m == &new_mode).is_some() {
-                        mode = new_mode.into();
-                    }
+                    line.split(char::is_whitespace).nth(1)
+                        .map(|mode_str| state.try_set_mode(mode_str));
                 } else {
-                    cmd_handler(&mut reactor, &mut mode, &line);
+                    cmd_handler(&mut reactor, &mut state, &line);
                 }
-            },
+            }
             Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => break,
             Err(err) => {
                 println!("Error: {:?}", err);
@@ -75,34 +148,27 @@ fn main() {
     rl.save_history("history.txt").unwrap();
 }
 
-fn cmd_handler<'a>(reactor: &mut reactor::Core, mode: &'a str, s: &'a str) {
-    let mut it = s.split(char::is_whitespace);
-    match it.next().unwrap() {
-        "get" => {
-            let opt_n = it.next().and_then(|s| s.parse().ok());
-            match mode {
-                "users" => {
-                    opt_n.map(|n| run_get_user(&mut reactor, n));
-                },
-                _ => {}
+fn cmd_handler<'a>(mut reactor: &mut reactor::Core, mut state: &mut State, s: &'a str) -> Result<(), std::option::NoneError> {
+    let mut words = s.split(char::is_whitespace);
+    let cmd = words.next().and_then(|w| w.try_into().ok())?;
+    match state.mode {
+        Mode::Users => {
+            match cmd {
+                Cmd::Get => {
+                    let id = words.next().and_then(|w| w.parse().ok())?;
+                    run_get_user(&mut reactor, id);
+                    Ok(())
+                }
+                Cmd::Insert => {
+                    let id = words.next().and_then(|w| w.parse().ok())?;
+                    let username = words.next()?;
+                    let new_user = NewUser::new(id, username);
+                    run_insert_user(&mut reactor, new_user);
+                    Ok(())
+                }
             }
-        },
-        "insert" => {
-            let opt_id = it.next().and_then(|s| s.parse().ok());
-            let opt_username = it.next();
-            match mode {
-                "users" => {
-                    opt_id.and_then(|id|
-                        opt_username.map(|name| {
-                            let new_user = NewUser { id, username: name.into() };
-                            run_insert_user(&mut reactor, new_user);
-                        })
-                    );
-                },
-                _ => {}
-            }
-        },
-        _ => {}
+        }
+        _ => Ok(())
     }
 }
 
