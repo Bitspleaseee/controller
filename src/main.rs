@@ -2,6 +2,7 @@
 #![feature(plugin)]
 #![plugin(tarpc_plugins)]
 
+extern crate datatypes;
 #[macro_use]
 extern crate diesel;
 extern crate dotenv;

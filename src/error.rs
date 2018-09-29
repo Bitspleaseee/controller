@@ -1,3 +1,5 @@
+use datatypes::content::responses::ContentRequestError;
+use datatypes::error::ResponseError;
 use failure::{Backtrace, Context, Fail};
 use std::convert::From;
 use std::fmt::{self, Display};
@@ -88,5 +90,24 @@ impl From<ErrorKind> for Error {
 impl From<Context<ErrorKind>> for Error {
     fn from(inner: Context<ErrorKind>) -> Error {
         Error { inner }
+    }
+}
+
+impl Into<ResponseError> for Error {
+    fn into(self) -> ResponseError {
+        match self.kind() {
+            ErrorKind::ConnectionError => {
+                ResponseError::ContentRequestError(ContentRequestError::ServerError)
+            }
+            ErrorKind::QueryError => {
+                ResponseError::ContentRequestError(ContentRequestError::ServerError)
+            }
+            ErrorKind::ContentNotFound => {
+                ResponseError::ContentRequestError(ContentRequestError::MissingContent)
+            }
+            ErrorKind::ServerError => {
+                ResponseError::ContentRequestError(ContentRequestError::ServerError)
+            }
+        }
     }
 }
