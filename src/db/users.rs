@@ -15,7 +15,7 @@ pub fn insert_user(connection: &DbConn, user_id: &UserId, user_name: &Username) 
     trace!("Inserting user ({:?}:{})", user_id, user_name);
 
     diesel::insert_into(users)
-        .values((id.eq(*(*user_id)), username.eq(user_name.get_string())))
+        .values((id.eq(*(*user_id)), username.eq(user_name.as_ref())))
         .execute(connection)
         .context(IntErrorKind::QueryError)
         .and_then(|_| {
@@ -102,7 +102,7 @@ pub fn update_user_username(
     trace!("Updating user username ({:?})", user_id);
 
     let num_updated = diesel::update(users)
-        .set(username.eq(new_username.get_string()))
+        .set(username.eq(new_username.as_ref()))
         .filter(id.eq(*(*user_id)))
         .execute(connection)
         .context(IntErrorKind::QueryError)?;
@@ -125,7 +125,7 @@ pub fn update_user_description(
     trace!("Updating user description ({:?})", user_id);
 
     let num_updated = diesel::update(users)
-        .set(description.eq(new_description.get_string()))
+        .set(description.eq(new_description.as_ref()))
         .filter(id.eq(*(*user_id)))
         .execute(connection)
         .context(IntErrorKind::QueryError)?;

@@ -20,8 +20,8 @@ pub fn insert_category(
 
     diesel::insert_into(categories)
         .values((
-            title.eq(new_title.get_string()),
-            description.eq(new_description.get_string()),
+            title.eq(new_title.as_ref()),
+            description.eq(new_description.as_ref()),
         )).execute(connection)
         .context(IntErrorKind::QueryError)
         .and_then(|_| {
@@ -86,8 +86,8 @@ pub fn update_category(
 
     let num_updated = diesel::update(categories)
         .set((
-            title.eq(new_title.get_string()),
-            description.eq(new_description.get_string()),
+            title.eq(new_title.as_ref()),
+            description.eq(new_description.as_ref()),
         )).filter(id.eq(*(*category_id)))
         .execute(connection)
         .context(IntErrorKind::QueryError)?;
@@ -111,7 +111,7 @@ pub fn update_category_title(
     trace!("Updating category title ({:?})", category_id);
 
     let num_updated = diesel::update(categories)
-        .set(title.eq(new_title.get_string()))
+        .set(title.eq(new_title.as_ref()))
         .filter(id.eq(*(*category_id)))
         .execute(connection)
         .context(IntErrorKind::QueryError)?;
@@ -134,7 +134,7 @@ pub fn update_category_description(
     trace!("Updating category description ({:?})", category_id);
 
     let num_updated = diesel::update(categories)
-        .set(description.eq(new_description.get_string()))
+        .set(description.eq(new_description.as_ref()))
         .filter(id.eq(*(*category_id)))
         .execute(connection)
         .context(IntErrorKind::QueryError)?;
