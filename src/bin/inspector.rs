@@ -6,47 +6,31 @@
 #[macro_use]
 extern crate tarpc;
 extern crate futures;
-extern crate tokio_core;
-#[macro_use]
-extern crate serde_derive;
 extern crate rustyline;
+extern crate serde_derive;
+extern crate tokio_core;
+
+extern crate datatypes;
 
 use futures::Future;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
+use std::convert::{TryFrom, TryInto};
+use std::default::Default;
 use tarpc::future::client;
 use tarpc::future::client::ClientExt;
 use tarpc::util::FirstSocketAddr;
 use tokio_core::reactor;
-use std::default::Default;
-use std::convert::{TryFrom, TryInto};
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct User {
-    pub id: i32,
-    pub username: String,
-    pub description: Option<String>,
-    pub avatar: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct NewUser {
-    pub id: i32,
-    pub username: String,
-}
-
-impl NewUser {
-    pub fn new(id: i32, n: impl Into<String>) -> NewUser {
-        NewUser {
-            id,
-            username: n.into()
-        }
-    }
-}
+use datatypes::content::requests::ContentRequest::*;
+use datatypes::content::requests::*;
+use datatypes::content::responses::*;
+use datatypes::error::ResponseError;
+use datatypes::valid::fields::*;
 
 service! {
-    rpc get_user(id: i32) -> Option<User>;
-    rpc insert_user(user: NewUser) -> Option<User>;
+    rpc add_user(user: AddUserPayload) -> Result<UserPayload, ResponseError>;
+    rpc content_request(request: ContentRequest) -> Result<ContentSuccess, ResponseError>;
 }
 
 pub enum Cmd {
@@ -61,7 +45,7 @@ impl TryFrom<&str> for Cmd {
         match s {
             "get" => Ok(Get),
             "insert" => Ok(Insert),
-            _ => Err(())
+            _ => Err(()),
         }
     }
 }
@@ -80,7 +64,7 @@ impl TryFrom<&str> for Mode {
             "main" => Ok(Main),
             "users" => Ok(Users),
             "categories" => Ok(Categories),
-            _ => Err(())
+            _ => Err(()),
         }
     }
 }
@@ -90,13 +74,13 @@ impl Mode {
         match self {
             Mode::Main => "main",
             Mode::Users => "users",
-            Mode::Categories => "categories"
+            Mode::Categories => "categories",
         }
     }
 }
 
 pub struct State {
-    mode: Mode
+    mode: Mode,
 }
 
 impl State {
@@ -110,12 +94,9 @@ impl State {
 
 impl Default for State {
     fn default() -> State {
-        State {
-            mode: Mode::Main
-        }
+        State { mode: Mode::Main }
     }
 }
-
 
 fn main() {
     let mut reactor = reactor::Core::new().unwrap();
@@ -132,10 +113,12 @@ fn main() {
                 rl.add_history_entry(line.as_ref());
                 // Change between databases ol.
                 if line.starts_with("mode") {
-                    line.split(char::is_whitespace).nth(1)
+                    line.split(char::is_whitespace)
+                        .nth(1)
                         .map(|mode_str| state.try_set_mode(mode_str));
                 } else {
-                    cmd_handler(&mut reactor, &mut state, &line);
+                    cmd_handler(&mut reactor, &state, &line)
+                        .unwrap_or_else(|err| println!("Error: {:?}", err));
                 }
             }
             Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => break,
@@ -148,30 +131,40 @@ fn main() {
     rl.save_history("history.txt").unwrap();
 }
 
-fn cmd_handler<'a>(mut reactor: &mut reactor::Core, mut state: &mut State, s: &'a str) -> Result<(), std::option::NoneError> {
+fn cmd_handler<'a>(
+    mut reactor: &mut reactor::Core,
+    state: &State,
+    s: &'a str,
+) -> Result<(), std::option::NoneError> {
     let mut words = s.split(char::is_whitespace);
     let cmd = words.next().and_then(|w| w.try_into().ok())?;
     match state.mode {
-        Mode::Users => {
-            match cmd {
-                Cmd::Get => {
-                    let id = words.next().and_then(|w| w.parse().ok())?;
-                    run_get_user(&mut reactor, id);
-                    Ok(())
-                }
-                Cmd::Insert => {
-                    let id = words.next().and_then(|w| w.parse().ok())?;
-                    let username = words.next()?;
-                    let new_user = NewUser::new(id, username);
-                    run_insert_user(&mut reactor, new_user);
-                    Ok(())
-                }
+        Mode::Users => match cmd {
+            Cmd::Get => {
+                //let id = words.next().and_then(|w| w.parse().ok())?;
+                //run_get_user(&mut reactor, id);
+                Ok(())
             }
-        }
-        _ => Ok(())
+            Cmd::Insert => {
+                let id = words.next().and_then(|w| w.parse().ok())?;
+                let username = words
+                    .next()
+                    .and_then(|w| Username::try_from(w.to_string()).ok())?;
+                run_add_user(&mut reactor, id, username);
+                Ok(())
+            }
+        },
+        Mode::Categories => match cmd {
+            Cmd::Get => Ok(()),
+            Cmd::Insert => {
+                run_add_category(&mut reactor);
+                Ok(())
+            }
+        },
+        _ => Ok(()),
     }
 }
-
+/*
 fn run_get_user(reactor: &mut reactor::Core, id: i32) {
     let options = client::Options::default().handle(reactor.handle());
     reactor
@@ -185,17 +178,38 @@ fn run_get_user(reactor: &mut reactor::Core, id: i32) {
                 }),
         ).unwrap();
 }
+*/
+fn run_add_user(reactor: &mut reactor::Core, id: u32, username: Username) {
+    let request = AddUserPayload::new(id, username);
 
-fn run_insert_user(reactor: &mut reactor::Core, new_user: NewUser) {
     let options = client::Options::default().handle(reactor.handle());
     reactor
         .run(
             FutureClient::connect("localhost:10000".first_socket_addr(), options)
                 .map_err(tarpc::Error::from)
-                .and_then(|client| client.insert_user(new_user))
+                .and_then(|client| client.add_user(request))
                 .map(|user| match user {
-                    Some(value) => println!("The server responded with: {:#?}", value),
-                    None => println!("The server responded with: No user"),
+                    Ok(value) => println!("The server responded with: {:#?}", value),
+                    Err(error) => println!("The server responded with error: {}", error),
+                }),
+        ).unwrap();
+}
+
+fn run_add_category(reactor: &mut reactor::Core) {
+    let title = Title::try_from("Test cat title".to_string()).expect("Invalid title");
+    let description =
+        Description::try_from("Test cat description".to_string()).expect("Invalid description");
+    let request = AddCategory(AddCategoryPayload::new(title, description));
+
+    let options = client::Options::default().handle(reactor.handle());
+    reactor
+        .run(
+            FutureClient::connect("localhost:10000".first_socket_addr(), options)
+                .map_err(tarpc::Error::from)
+                .and_then(|client| client.content_request(request))
+                .map(|response| match response {
+                    Ok(value) => println!("The server responded with: {:#?}", value),
+                    Err(error) => println!("The server responded with error: {}", error),
                 }),
         ).unwrap();
 }

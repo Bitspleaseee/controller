@@ -5,32 +5,35 @@ use super::DbConn;
 use crate::types::User;
 use crate::{IntErrorKind, IntResult};
 
+use datatypes::valid::fields::*;
+use datatypes::valid::ids::*;
+
 /// Inserts new user into the user table
-pub fn insert_user(connection: &DbConn, user_id: i32, user_name: &str) -> IntResult<User> {
+pub fn insert_user(connection: &DbConn, user_id: &UserId, user_name: &Username) -> IntResult<User> {
     use super::schema::users::dsl::{id, username, users};
 
-    trace!("Inserting user ({}:{})", user_id, user_name);
+    trace!("Inserting user ({:?}:{})", user_id, user_name);
 
     diesel::insert_into(users)
-        .values((id.eq(user_id), username.eq(user_name)))
+        .values((id.eq(*(*user_id)), username.eq(user_name.get_string())))
         .execute(connection)
         .context(IntErrorKind::QueryError)
         .and_then(|_| {
             users
-                .filter(id.eq(user_id))
+                .filter(id.eq(*(*user_id)))
                 .first::<User>(connection)
-                .context(IntErrorKind::QueryError)
+                .context(IntErrorKind::ContentNotFound)
         }).map_err(|e| e.into())
 }
 
 /// Gets an exisiting user from the user table
-pub fn get_user(connection: &DbConn, user_id: i32) -> IntResult<User> {
+pub fn get_user(connection: &DbConn, user_id: &UserId) -> IntResult<User> {
     use super::schema::users::dsl::{id, users};
 
-    trace!("Getting user ({})", user_id);
+    trace!("Getting user ({:?})", user_id);
 
     users
-        .filter(id.eq(user_id))
+        .filter(id.eq(*(*user_id)))
         .first::<User>(connection)
         .optional()
         .context(IntErrorKind::QueryError)?
@@ -39,13 +42,13 @@ pub fn get_user(connection: &DbConn, user_id: i32) -> IntResult<User> {
 }
 
 /// Deletes an existing user from the user table
-pub fn delete_user(connection: &DbConn, user_id: i32) -> IntResult<usize> {
+pub fn delete_user(connection: &DbConn, user_id: &UserId) -> IntResult<usize> {
     use super::schema::users::dsl::{id, users};
 
-    trace!("Deleting user ({})", user_id);
+    trace!("Deleting user ({:?})", user_id);
 
     let num_deleted = diesel::delete(users)
-        .filter(id.eq(user_id))
+        .filter(id.eq(*(*user_id)))
         .execute(connection)
         .context(IntErrorKind::QueryError)?;
 
@@ -67,7 +70,7 @@ pub fn delete_all_users(connection: &DbConn) -> IntResult<usize> {
         .context(IntErrorKind::QueryError)
         .map_err(|e| e.into())
 }
-
+/*
 /// Updates an existing user in the user table
 pub fn update_user(connection: &DbConn, user: &User) -> IntResult<User> {
     use super::schema::users::dsl::{id, users};
@@ -86,20 +89,21 @@ pub fn update_user(connection: &DbConn, user: &User) -> IntResult<User> {
         get_user(connection, user.id)
     }
 }
+*/
 
 /// Updates the title for an existing user in the user table
 pub fn update_user_username(
     connection: &DbConn,
-    user_id: i32,
-    new_username: &str,
+    user_id: &UserId,
+    new_username: &Username,
 ) -> IntResult<User> {
     use super::schema::users::dsl::{id, username, users};
 
-    trace!("Updating user username ({})", user_id);
+    trace!("Updating user username ({:?})", user_id);
 
     let num_updated = diesel::update(users)
-        .set(username.eq(new_username))
-        .filter(id.eq(user_id))
+        .set(username.eq(new_username.get_string()))
+        .filter(id.eq(*(*user_id)))
         .execute(connection)
         .context(IntErrorKind::QueryError)?;
 
@@ -113,16 +117,16 @@ pub fn update_user_username(
 /// Updates the description for an existing user in the user table
 pub fn update_user_description(
     connection: &DbConn,
-    user_id: i32,
-    new_description: &str,
+    user_id: &UserId,
+    new_description: &Description,
 ) -> IntResult<User> {
     use super::schema::users::dsl::{description, id, users};
 
-    trace!("Updating user description ({})", user_id);
+    trace!("Updating user description ({:?})", user_id);
 
     let num_updated = diesel::update(users)
-        .set(description.eq(new_description))
-        .filter(id.eq(user_id))
+        .set(description.eq(new_description.get_string()))
+        .filter(id.eq(*(*user_id)))
         .execute(connection)
         .context(IntErrorKind::QueryError)?;
 
@@ -134,14 +138,18 @@ pub fn update_user_description(
 }
 
 /// Updates the hidden flag for an existing user in the user table
-pub fn update_user_avatar(connection: &DbConn, user_id: i32, new_avatar: &str) -> IntResult<User> {
+pub fn update_user_avatar(
+    connection: &DbConn,
+    user_id: &UserId,
+    new_avatar: &str,
+) -> IntResult<User> {
     use super::schema::users::dsl::{avatar, id, users};
 
-    trace!("Updating user avatar flag ({})", user_id);
+    trace!("Updating user avatar flag ({:?})", user_id);
 
     let num_updated = diesel::update(users)
         .set(avatar.eq(new_avatar))
-        .filter(id.eq(user_id))
+        .filter(id.eq(*(*user_id)))
         .execute(connection)
         .context(IntErrorKind::QueryError)?;
 

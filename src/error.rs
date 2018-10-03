@@ -1,4 +1,4 @@
-use datatypes::content::responses::ContentRequestError;
+use datatypes::content::responses::ContentError;
 use datatypes::error::ResponseError;
 use failure::{Backtrace, Context, Fail};
 use std::convert::From;
@@ -96,18 +96,12 @@ impl From<Context<ErrorKind>> for Error {
 impl Into<ResponseError> for Error {
     fn into(self) -> ResponseError {
         match self.kind() {
-            ErrorKind::ConnectionError => {
-                ResponseError::ContentRequestError(ContentRequestError::ServerError)
-            }
-            ErrorKind::QueryError => {
-                ResponseError::ContentRequestError(ContentRequestError::ServerError)
-            }
+            ErrorKind::ConnectionError => ResponseError::InternalServerError,
+            ErrorKind::QueryError => ResponseError::InternalServerError,
             ErrorKind::ContentNotFound => {
-                ResponseError::ContentRequestError(ContentRequestError::MissingContent)
+                ResponseError::ContentRequestError(ContentError::MissingContent)
             }
-            ErrorKind::ServerError => {
-                ResponseError::ContentRequestError(ContentRequestError::ServerError)
-            }
+            ErrorKind::ServerError => ResponseError::InternalServerError,
         }
     }
 }

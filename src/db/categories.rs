@@ -5,19 +5,24 @@ use super::DbConn;
 use crate::types::Category;
 use crate::{IntErrorKind, IntResult};
 
+use datatypes::valid::fields::*;
+use datatypes::valid::ids::*;
+
 /// Inserts a new category into the category table
 pub fn insert_category(
     connection: &DbConn,
-    new_title: &str,
-    new_description: &str,
+    new_title: &Title,
+    new_description: &Description,
 ) -> IntResult<Category> {
     use super::schema::categories::dsl::{categories, description, id, title};
 
     trace!("Inserting category: {}", new_title);
 
     diesel::insert_into(categories)
-        .values((title.eq(new_title), description.eq(new_description)))
-        .execute(connection)
+        .values((
+            title.eq(new_title.get_string()),
+            description.eq(new_description.get_string()),
+        )).execute(connection)
         .context(IntErrorKind::QueryError)
         .and_then(|_| {
             categories
@@ -28,13 +33,13 @@ pub fn insert_category(
 }
 
 /// Gets an exisiting category from the category table
-fn get_category(connection: &DbConn, category_id: i32) -> IntResult<Category> {
+fn get_category(connection: &DbConn, category_id: &CategoryId) -> IntResult<Category> {
     use super::schema::categories::dsl::{categories, id};
 
-    trace!("Getting category ({})", category_id);
+    trace!("Getting category ({:?})", category_id);
 
     categories
-        .filter(id.eq(category_id))
+        .filter(id.eq(*(*category_id)))
         .first::<Category>(connection)
         .optional()
         .context(IntErrorKind::QueryError)?
@@ -69,37 +74,45 @@ pub fn delete_all_categories(connection: &DbConn) -> IntResult<usize> {
 }
 
 /// Updates an existing category in the category table
-pub fn update_category(connection: &DbConn, category: &Category) -> IntResult<Category> {
-    use super::schema::categories::dsl::{categories, id};
+pub fn update_category(
+    connection: &DbConn,
+    category_id: &CategoryId,
+    new_title: &Title,
+    new_description: &Description,
+) -> IntResult<Category> {
+    use super::schema::categories::dsl::{categories, description, id, title};
 
-    trace!("Updating category ({}:{})", category.id, category.title);
+    trace!("Updating category ({:?})", category_id);
 
     let num_updated = diesel::update(categories)
-        .set(category)
-        .filter(id.eq(category.id))
+        .set((
+            title.eq(new_title.get_string()),
+            description.eq(new_description.get_string()),
+        )).filter(id.eq(*(*category_id)))
         .execute(connection)
         .context(IntErrorKind::QueryError)?;
 
     if num_updated == 0 {
         Err(IntErrorKind::ContentNotFound)?
     } else {
-        get_category(&connection, category.id)
+        //get_category(&connection, )
+        Err(IntErrorKind::ContentNotFound)?
     }
 }
 
 /// Updates the title for an existing category in the category table
 pub fn update_category_title(
     connection: &DbConn,
-    category_id: i32,
-    new_title: &str,
+    category_id: &CategoryId,
+    new_title: &Title,
 ) -> IntResult<Category> {
     use super::schema::categories::dsl::{categories, id, title};
 
-    trace!("Updating category title ({})", category_id);
+    trace!("Updating category title ({:?})", category_id);
 
     let num_updated = diesel::update(categories)
-        .set(title.eq(new_title))
-        .filter(id.eq(category_id))
+        .set(title.eq(new_title.get_string()))
+        .filter(id.eq(*(*category_id)))
         .execute(connection)
         .context(IntErrorKind::QueryError)?;
 
@@ -113,16 +126,16 @@ pub fn update_category_title(
 /// Updates the description for an existing category in the category table
 pub fn update_category_description(
     connection: &DbConn,
-    category_id: i32,
-    new_description: &str,
+    category_id: &CategoryId,
+    new_description: &Description,
 ) -> IntResult<Category> {
     use super::schema::categories::dsl::{categories, description, id};
 
-    trace!("Updating category description ({})", category_id);
+    trace!("Updating category description ({:?})", category_id);
 
     let num_updated = diesel::update(categories)
-        .set(description.eq(new_description))
-        .filter(id.eq(category_id))
+        .set(description.eq(new_description.get_string()))
+        .filter(id.eq(*(*category_id)))
         .execute(connection)
         .context(IntErrorKind::QueryError)?;
 
@@ -136,16 +149,16 @@ pub fn update_category_description(
 /// Updates the hidden flag for an existing category in the category table
 pub fn update_category_hidden(
     connection: &DbConn,
-    category_id: i32,
-    new_hidden: bool,
+    category_id: &CategoryId,
+    new_hidden: &bool,
 ) -> IntResult<Category> {
     use super::schema::categories::dsl::{categories, hidden, id};
 
-    trace!("Updating category hidden flag ({})", category_id);
+    trace!("Updating category hidden flag ({:?})", category_id);
 
     let num_updated = diesel::update(categories)
         .set(hidden.eq(new_hidden))
-        .filter(id.eq(category_id))
+        .filter(id.eq(*(*category_id)))
         .execute(connection)
         .context(IntErrorKind::QueryError)?;
 

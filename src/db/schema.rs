@@ -1,6 +1,6 @@
 table! {
     categories (id) {
-        id -> Integer,
+        id -> Unsigned<Integer>,
         title -> Varchar,
         description -> Text,
         hidden -> Bool,
@@ -9,10 +9,10 @@ table! {
 
 table! {
     comments (id) {
-        id -> Integer,
-        thread_id -> Integer,
-        parent_id -> Nullable<Integer>,
-        user_id -> Integer,
+        id -> Unsigned<Integer>,
+        thread_id -> Unsigned<Integer>,
+        parent_id -> Nullable<Unsigned<Integer>>,
+        user_id -> Unsigned<Integer>,
         content -> Text,
         hidden -> Bool,
     }
@@ -20,9 +20,9 @@ table! {
 
 table! {
     threads (id) {
-        id -> Integer,
-        category_id -> Integer,
-        user_id -> Integer,
+        id -> Unsigned<Integer>,
+        category_id -> Unsigned<Integer>,
+        user_id -> Unsigned<Integer>,
         title -> Varchar,
         description -> Text,
         timestamp -> Datetime,
@@ -32,7 +32,7 @@ table! {
 
 table! {
     users (id) {
-        id -> Integer,
+        id -> Unsigned<Integer>,
         username -> Varchar,
         description -> Nullable<Varchar>,
         avatar -> Nullable<Varchar>,

@@ -1,5 +1,6 @@
 #![allow(proc_macro_derive_resolution_fallback)]
 #![feature(plugin)]
+#![feature(try_from)]
 #![plugin(tarpc_plugins)]
 
 extern crate datatypes;
