@@ -1,9 +1,9 @@
 use super::db::schema::*;
 
 use datatypes::content::responses::*;
-use datatypes::valid::fields::*;
-use datatypes::valid::ids::*;
-use std::convert::TryFrom;
+use datatypes::valid::ValidationError;
+
+use std::convert::TryInto;
 
 #[derive(Queryable, Insertable, AsChangeset, Debug, Serialize, Deserialize)]
 #[table_name = "users"]
@@ -13,17 +13,17 @@ pub struct User {
     pub description: Option<String>,
     pub avatar: Option<String>,
 }
-impl Into<UserPayload> for User {
-    fn into(self) -> UserPayload {
-        UserPayload {
-            id: UserId::try_from(self.id).unwrap(),
-            username: Username::try_from(self.username).unwrap(),
-            description: match self.description {
-                None => None,
-                Some(d) => Description::try_from(d).ok(),
-            },
+
+impl TryInto<UserPayload> for User {
+    type Error = ValidationError;
+    fn try_into(self) -> Result<UserPayload, Self::Error> {
+        let username = self.username.try_into()?;
+        Ok(UserPayload {
+            id: self.id.into(),
+            username,
+            description: self.description.and_then(|d| d.try_into().ok()),
             avatar: self.avatar,
-        }
+        })
     }
 }
 
@@ -35,13 +35,17 @@ pub struct Category {
     pub description: String,
     pub hidden: bool,
 }
-impl Into<CategoryPayload> for Category {
-    fn into(self) -> CategoryPayload {
-        CategoryPayload {
-            id: CategoryId::try_from(self.id).unwrap(),
-            title: Title::try_from(self.title).unwrap(),
-            description: Description::try_from(self.description).unwrap(),
+
+impl TryInto<CategoryPayload> for Category {
+    type Error = ValidationError;
+    fn try_into(self) -> Result<CategoryPayload, Self::Error> {
+        let title = self.title.try_into()?;
+        let description = self.description.try_into()?;
+        Ok(CategoryPayload {
+            id: self.id.into(),
+            title,
+            description,
             hidden: self.hidden,
-        }
+        })
     }
 }
