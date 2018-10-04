@@ -2,6 +2,7 @@ use super::db::schema::*;
 
 use datatypes::content::responses::*;
 use datatypes::valid::fields::*;
+use datatypes::valid::ids::*;
 use std::convert::TryFrom;
 
 #[derive(Queryable, Insertable, AsChangeset, Debug, Serialize, Deserialize)]
@@ -14,15 +15,15 @@ pub struct User {
 }
 impl Into<UserPayload> for User {
     fn into(self) -> UserPayload {
-        UserPayload::new(
-            self.id,
-            Username::try_from(self.username).unwrap(),
-            match self.description {
+        UserPayload {
+            id: UserId::try_from(self.id).unwrap(),
+            username: Username::try_from(self.username).unwrap(),
+            description: match self.description {
                 None => None,
                 Some(d) => Description::try_from(d).ok(),
             },
-            self.avatar,
-        )
+            avatar: self.avatar,
+        }
     }
 }
 
@@ -36,10 +37,11 @@ pub struct Category {
 }
 impl Into<CategoryPayload> for Category {
     fn into(self) -> CategoryPayload {
-        CategoryPayload::new(
-            self.id,
-            Title::try_from(self.title).unwrap(),
-            Description::try_from(self.description).unwrap(),
-        )
+        CategoryPayload {
+            id: CategoryId::try_from(self.id).unwrap(),
+            title: Title::try_from(self.title).unwrap(),
+            description: Description::try_from(self.description).unwrap(),
+            hidden: self.hidden,
+        }
     }
 }

@@ -22,15 +22,37 @@ use tarpc::future::client::ClientExt;
 use tarpc::util::FirstSocketAddr;
 use tokio_core::reactor;
 
-use datatypes::content::requests::ContentRequest::*;
 use datatypes::content::requests::*;
 use datatypes::content::responses::*;
-use datatypes::error::ResponseError;
+use datatypes::error::ResponseResult;
 use datatypes::valid::fields::*;
+use datatypes::valid::ids::*;
 
 service! {
-    rpc add_user(user: AddUserPayload) -> Result<UserPayload, ResponseError>;
-    rpc content_request(request: ContentRequest) -> Result<ContentSuccess, ResponseError>;
+    rpc get_user(payload: GetUserPayload) -> ResponseResult<UserPayload>;
+    rpc add_user(payload: AddUserPayload) -> ResponseResult<UserPayload>;
+    rpc edit_user(payload: EditUserPayload) -> ResponseResult<UserPayload>;
+    rpc upload_avatar(payload: UploadAvatarPayload) -> ResponseResult<UserPayload>;
+
+    rpc get_category(payload: GetCategoryPayload) -> ResponseResult<CategoryPayload>;
+    rpc get_categories(payload: GetCategoriesPayload) -> ResponseResult<Vec<CategoryPayload>>;
+    rpc add_category(payload: AddCategoryPayload) -> ResponseResult<CategoryPayload>;
+    rpc edit_category(payload: EditCategoryPayload) -> ResponseResult<CategoryPayload>;
+    rpc hide_category(payload: HideCategoryPayload) -> ResponseResult<CategoryPayload>;
+
+    rpc get_thread(payload: GetThreadPayload) -> ResponseResult<ThreadPayload>;
+    rpc get_threads(payload: GetThreadsPayload) -> ResponseResult<Vec<ThreadPayload>>;
+    rpc add_thread(payload: AddThreadPayload) -> ResponseResult<ThreadPayload>;
+    rpc edit_thread(payload: EditThreadPayload) -> ResponseResult<ThreadPayload>;
+    rpc hide_thread(payload: HideThreadPayload) -> ResponseResult<ThreadPayload>;
+
+    rpc get_comment(payload: GetCommentPayload) -> ResponseResult<CommentPayload>;
+    rpc get_comments(payload: GetCommentsPayload) -> ResponseResult<Vec<CommentPayload>>;
+    rpc add_comment(payload: AddCommentPayload) -> ResponseResult<CommentPayload>;
+    rpc edit_comment(payload: EditCommentPayload) -> ResponseResult<CommentPayload>;
+    rpc hide_comment(payload: HideCommentPayload) -> ResponseResult<CommentPayload>;
+
+    rpc search(payload: SearchPayload) -> ResponseResult<SearchResultsPayload>;
 }
 
 pub enum Cmd {
@@ -141,8 +163,8 @@ fn cmd_handler<'a>(
     match state.mode {
         Mode::Users => match cmd {
             Cmd::Get => {
-                //let id = words.next().and_then(|w| w.parse().ok())?;
-                //run_get_user(&mut reactor, id);
+                let id = words.next().and_then(|w| w.parse().ok())?;
+                run_get_user(&mut reactor, id);
                 Ok(())
             }
             Cmd::Insert => {
@@ -164,23 +186,32 @@ fn cmd_handler<'a>(
         _ => Ok(()),
     }
 }
-/*
-fn run_get_user(reactor: &mut reactor::Core, id: i32) {
+
+// Users
+
+fn run_get_user(reactor: &mut reactor::Core, id: u32) {
+    let request = GetUserPayload {
+        id: UserId::try_from(id).expect("Invalid id"),
+    };
+
     let options = client::Options::default().handle(reactor.handle());
     reactor
         .run(
             FutureClient::connect("localhost:10000".first_socket_addr(), options)
                 .map_err(tarpc::Error::from)
-                .and_then(|client| client.get_user(id))
-                .map(|user| match user {
-                    Some(value) => println!("The server responded with: {:#?}", value),
-                    None => println!("The server responded with: No user"),
+                .and_then(|client| client.get_user(request))
+                .map(|response| match response {
+                    Ok(value) => println!("The server responded with: {:#?}", value),
+                    Err(error) => println!("The server responded with error: {}", error),
                 }),
         ).unwrap();
 }
-*/
+
 fn run_add_user(reactor: &mut reactor::Core, id: u32, username: Username) {
-    let request = AddUserPayload::new(id, username);
+    let request = AddUserPayload {
+        id: UserId::try_from(id).expect("Invalid id"),
+        username,
+    };
 
     let options = client::Options::default().handle(reactor.handle());
     reactor
@@ -188,25 +219,26 @@ fn run_add_user(reactor: &mut reactor::Core, id: u32, username: Username) {
             FutureClient::connect("localhost:10000".first_socket_addr(), options)
                 .map_err(tarpc::Error::from)
                 .and_then(|client| client.add_user(request))
-                .map(|user| match user {
+                .map(|response| match response {
                     Ok(value) => println!("The server responded with: {:#?}", value),
                     Err(error) => println!("The server responded with error: {}", error),
                 }),
         ).unwrap();
 }
 
+// Categories
+
 fn run_add_category(reactor: &mut reactor::Core) {
     let title = Title::try_from("Test cat title".to_string()).expect("Invalid title");
     let description =
         Description::try_from("Test cat description".to_string()).expect("Invalid description");
-    let request = AddCategory(AddCategoryPayload::new(title, description));
-
+    let request = AddCategoryPayload { title, description };
     let options = client::Options::default().handle(reactor.handle());
     reactor
         .run(
             FutureClient::connect("localhost:10000".first_socket_addr(), options)
                 .map_err(tarpc::Error::from)
-                .and_then(|client| client.content_request(request))
+                .and_then(|client| client.add_category(request))
                 .map(|response| match response {
                     Ok(value) => println!("The server responded with: {:#?}", value),
                     Err(error) => println!("The server responded with error: {}", error),
