@@ -8,6 +8,7 @@ use crate::{IntErrorKind, IntResult};
 
 pub mod categories;
 pub mod schema;
+pub mod threads;
 pub mod users;
 
 pub type DbConn = MysqlConnection;
