@@ -33,7 +33,7 @@ pub fn insert_category(
 }
 
 /// Gets an exisiting category from the category table
-fn get_category(connection: &DbConn, category_id: &CategoryId) -> IntResult<Category> {
+pub fn get_category(connection: &DbConn, category_id: &CategoryId) -> IntResult<Category> {
     use super::schema::categories::dsl::{categories, id};
 
     trace!("Getting category ({:?})", category_id);
@@ -95,53 +95,6 @@ pub fn update_category(
     if num_updated == 0 {
         Err(IntErrorKind::ContentNotFound)?
     } else {
-        //get_category(&connection, )
-        Err(IntErrorKind::ContentNotFound)?
-    }
-}
-
-/// Updates the title for an existing category in the category table
-pub fn update_category_title(
-    connection: &DbConn,
-    category_id: &CategoryId,
-    new_title: &Title,
-) -> IntResult<Category> {
-    use super::schema::categories::dsl::{categories, id, title};
-
-    trace!("Updating category title ({:?})", category_id);
-
-    let num_updated = diesel::update(categories)
-        .set(title.eq(new_title.as_ref()))
-        .filter(id.eq(*(*category_id)))
-        .execute(connection)
-        .context(IntErrorKind::QueryError)?;
-
-    if num_updated == 0 {
-        Err(IntErrorKind::ContentNotFound)?
-    } else {
-        get_category(&connection, category_id)
-    }
-}
-
-/// Updates the description for an existing category in the category table
-pub fn update_category_description(
-    connection: &DbConn,
-    category_id: &CategoryId,
-    new_description: &Description,
-) -> IntResult<Category> {
-    use super::schema::categories::dsl::{categories, description, id};
-
-    trace!("Updating category description ({:?})", category_id);
-
-    let num_updated = diesel::update(categories)
-        .set(description.eq(new_description.as_ref()))
-        .filter(id.eq(*(*category_id)))
-        .execute(connection)
-        .context(IntErrorKind::QueryError)?;
-
-    if num_updated == 0 {
-        Err(IntErrorKind::ContentNotFound)?
-    } else {
         get_category(&connection, category_id)
     }
 }
@@ -150,7 +103,7 @@ pub fn update_category_description(
 pub fn update_category_hidden(
     connection: &DbConn,
     category_id: &CategoryId,
-    new_hidden: &bool,
+    new_hidden: bool,
 ) -> IntResult<Category> {
     use super::schema::categories::dsl::{categories, hidden, id};
 
