@@ -14,6 +14,11 @@ pub fn get_threads(con: &DbConn, payload: GetThreadsPayload) -> ResponseResult<V
     unimplemented!()
 }
 
+pub fn get_all_threads(con: &DbConn, payload: GetHiddenPayload) -> ResponseResult<Vec<ThreadPayload>> {
+    trace!("get_all_threads {:?}", payload);
+    unimplemented!()
+}
+
 pub fn add_thread(con: &DbConn, payload: AddThreadPayload) -> ResponseResult<ThreadPayload> {
     trace!("add_thread {:?}", payload);
     unimplemented!()

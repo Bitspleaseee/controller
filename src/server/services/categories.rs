@@ -21,7 +21,7 @@ pub fn get_category(con: &DbConn, payload: GetCategoryPayload) -> ResponseResult
 
 pub fn get_categories(
     con: &DbConn,
-    payload: GetCategoriesPayload,
+    payload: GetHiddenPayload,
 ) -> ResponseResult<Vec<CategoryPayload>> {
     trace!("get_categories {:?}", payload);
     

@@ -9,11 +9,13 @@ pub fn get_comment(con: &DbConn, payload: GetCommentPayload) -> ResponseResult<C
     unimplemented!()
 }
 
-pub fn get_comments(
-    con: &DbConn,
-    payload: GetCommentsPayload,
-) -> ResponseResult<Vec<CommentPayload>> {
+pub fn get_comments(con: &DbConn, payload: GetCommentsPayload) -> ResponseResult<Vec<CommentPayload>> {
     trace!("get_comments {:?}", payload);
+    unimplemented!()
+}
+
+pub fn get_all_comments( con: &DbConn, payload: GetHiddenPayload) -> ResponseResult<Vec<CommentPayload>> {
+    trace!("get_all_comments {:?}", payload);
     unimplemented!()
 }
 
