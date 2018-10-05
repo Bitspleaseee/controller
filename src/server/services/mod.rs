@@ -1,12 +1,10 @@
 use super::Server;
 
 use futures_cpupool::CpuFuture;
-use tarpc::util::Never;
-use tarpc::*;
 
 use datatypes::content::requests::*;
 use datatypes::content::responses::*;
-use datatypes::error::{ResponseError, ResponseResult};
+use datatypes::error::ResponseError;
 
 mod categories;
 mod comments;
@@ -15,44 +13,44 @@ mod threads;
 mod users;
 
 service! {
-    rpc get_user(payload: GetUserPayload) -> ResponseResult<UserPayload>;
-    rpc add_user(payload: AddUserPayload) -> ResponseResult<UserPayload>;
-    rpc edit_user(payload: EditUserPayload) -> ResponseResult<UserPayload>;
-    rpc upload_avatar(payload: UploadAvatarPayload) -> ResponseResult<UserPayload>;
+    rpc get_user(payload: GetUserPayload) -> UserPayload | ResponseError;
+    rpc add_user(payload: AddUserPayload) -> UserPayload | ResponseError;
+    rpc edit_user(payload: EditUserPayload) -> UserPayload | ResponseError;
+    rpc upload_avatar(payload: UploadAvatarPayload) -> UserPayload | ResponseError;
 
-    rpc get_category(payload: GetCategoryPayload) -> ResponseResult<CategoryPayload>;
-    rpc get_categories(payload: GetCategoriesPayload) -> ResponseResult<Vec<CategoryPayload>>;
-    rpc add_category(payload: AddCategoryPayload) -> ResponseResult<CategoryPayload>;
-    rpc edit_category(payload: EditCategoryPayload) -> ResponseResult<CategoryPayload>;
-    rpc hide_category(payload: HideCategoryPayload) -> ResponseResult<CategoryPayload>;
+    rpc get_category(payload: GetCategoryPayload) -> CategoryPayload | ResponseError;
+    rpc get_categories(payload: GetCategoriesPayload) -> Vec<CategoryPayload> | ResponseError;
+    rpc add_category(payload: AddCategoryPayload) -> CategoryPayload | ResponseError;
+    rpc edit_category(payload: EditCategoryPayload) -> CategoryPayload | ResponseError;
+    rpc hide_category(payload: HideCategoryPayload) -> CategoryPayload | ResponseError;
 
-    rpc get_thread(payload: GetThreadPayload) -> ResponseResult<ThreadPayload>;
-    rpc get_threads(payload: GetThreadsPayload) -> ResponseResult<Vec<ThreadPayload>>;
-    rpc add_thread(payload: AddThreadPayload) -> ResponseResult<ThreadPayload>;
-    rpc edit_thread(payload: EditThreadPayload) -> ResponseResult<ThreadPayload>;
-    rpc hide_thread(payload: HideThreadPayload) -> ResponseResult<ThreadPayload>;
+    rpc get_thread(payload: GetThreadPayload) -> ThreadPayload | ResponseError;
+    rpc get_threads(payload: GetThreadsPayload) -> Vec<ThreadPayload> | ResponseError;
+    rpc add_thread(payload: AddThreadPayload) -> ThreadPayload | ResponseError;
+    rpc edit_thread(payload: EditThreadPayload) -> ThreadPayload | ResponseError;
+    rpc hide_thread(payload: HideThreadPayload) -> ThreadPayload | ResponseError;
 
-    rpc get_comment(payload: GetCommentPayload) -> ResponseResult<CommentPayload>;
-    rpc get_comments(payload: GetCommentsPayload) -> ResponseResult<Vec<CommentPayload>>;
-    rpc add_comment(payload: AddCommentPayload) -> ResponseResult<CommentPayload>;
-    rpc edit_comment(payload: EditCommentPayload) -> ResponseResult<CommentPayload>;
-    rpc hide_comment(payload: HideCommentPayload) -> ResponseResult<CommentPayload>;
+    rpc get_comment(payload: GetCommentPayload) -> CommentPayload | ResponseError;
+    rpc get_comments(payload: GetCommentsPayload) -> Vec<CommentPayload> | ResponseError;
+    rpc add_comment(payload: AddCommentPayload) -> CommentPayload | ResponseError;
+    rpc edit_comment(payload: EditCommentPayload) -> CommentPayload | ResponseError;
+    rpc hide_comment(payload: HideCommentPayload) -> CommentPayload | ResponseError;
 
-    rpc search(payload: SearchPayload) -> ResponseResult<SearchResultsPayload>;
+    rpc search(payload: SearchPayload) -> SearchResultsPayload | ResponseError;
 }
 
-type UserRes = CpuFuture<ResponseResult<UserPayload>, Never>;
+type UserRes = CpuFuture<UserPayload, ResponseError>;
 
-type CategoryRes = CpuFuture<ResponseResult<CategoryPayload>, Never>;
-type CategoriesRes = CpuFuture<ResponseResult<Vec<CategoryPayload>>, Never>;
+type CategoryRes = CpuFuture<CategoryPayload, ResponseError>;
+type CategoriesRes = CpuFuture<Vec<CategoryPayload>, ResponseError>;
 
-type ThreadRes = CpuFuture<ResponseResult<ThreadPayload>, Never>;
-type ThreadsRes = CpuFuture<ResponseResult<Vec<ThreadPayload>>, Never>;
+type ThreadRes = CpuFuture<ThreadPayload, ResponseError>;
+type ThreadsRes = CpuFuture<Vec<ThreadPayload>, ResponseError>;
 
-type CommentRes = CpuFuture<ResponseResult<CommentPayload>, Never>;
-type CommentsRes = CpuFuture<ResponseResult<Vec<CommentPayload>>, Never>;
+type CommentRes = CpuFuture<CommentPayload, ResponseError>;
+type CommentsRes = CpuFuture<Vec<CommentPayload>, ResponseError>;
 
-type SearchRes = CpuFuture<ResponseResult<SearchResultsPayload>, Never>;
+type SearchRes = CpuFuture<SearchResultsPayload, ResponseError>;
 
 #[macro_export]
 macro_rules! impl_service {
@@ -63,8 +61,8 @@ macro_rules! impl_service {
             let f = futures::lazy(move || {
                 cloned_pool
                     .get()
-                    .map(|con| $s_type::$s_name(&con, payload))
-                    .or(Ok(Err(ResponseError::InternalServerError)))
+                    .map_err(|_| ResponseError::InternalServerError)
+                    .and_then(|con| $s_type::$s_name(&con, payload))
             });
             self.pool.spawn(f)
         }

@@ -22,6 +22,7 @@ extern crate failure;
 extern crate failure_derive;
 extern crate futures;
 extern crate futures_cpupool;
+#[macro_use]
 extern crate tarpc;
 extern crate tokio_core;
 
