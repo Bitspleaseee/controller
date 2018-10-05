@@ -8,25 +8,24 @@ extern crate tarpc;
 extern crate futures;
 extern crate rustyline;
 extern crate serde_derive;
-extern crate tokio_core;
 
 extern crate datatypes;
 
-use futures::Future;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 use std::convert::{TryFrom, TryInto};
 use std::default::Default;
-use tarpc::future::client;
-use tarpc::future::client::ClientExt;
+use std::fmt::Debug;
+
+use tarpc::sync::client;
+use tarpc::sync::client::ClientExt;
 use tarpc::util::FirstSocketAddr;
-use tokio_core::reactor;
 
 use datatypes::content::requests::*;
 use datatypes::content::responses::*;
-use datatypes::error::ResponseError;
 use datatypes::valid::fields::*;
 use datatypes::valid::ids::*;
+use datatypes::error::ResponseError;
 
 service! {
     rpc get_user(payload: GetUserPayload) -> UserPayload | ResponseError;
@@ -123,7 +122,6 @@ impl Default for State {
 }
 
 fn main() {
-    let mut reactor = reactor::Core::new().unwrap();
     let mut state = State::default();
 
     let mut rl = Editor::<()>::new();
@@ -141,7 +139,7 @@ fn main() {
                         .nth(1)
                         .map(|mode_str| state.try_set_mode(mode_str));
                 } else {
-                    cmd_handler(&mut reactor, &state, &line)
+                    cmd_handler(&state, &line)
                         .unwrap_or_else(|err| println!("Error: {:?}", err));
                 }
             }
@@ -156,7 +154,6 @@ fn main() {
 }
 
 fn cmd_handler<'a>(
-    mut reactor: &mut reactor::Core,
     state: &State,
     s: &'a str,
 ) -> Result<(), std::option::NoneError> {
@@ -166,7 +163,7 @@ fn cmd_handler<'a>(
         Mode::Users => match cmd {
             Cmd::Get => {
                 let id = words.next().and_then(|w| w.parse().ok())?;
-                run_get_user(&mut reactor, id);
+                run_get_user(id);
                 Ok(())
             }
             Cmd::Insert => {
@@ -174,14 +171,14 @@ fn cmd_handler<'a>(
                 let username = words
                     .next()
                     .and_then(|w| Username::try_from(w.to_string()).ok())?;
-                run_add_user(&mut reactor, id, username);
+                run_add_user(id, username);
                 Ok(())
             }
         },
         Mode::Categories => match cmd {
             Cmd::Get => Ok(()),
             Cmd::Insert => {
-                run_add_category(&mut reactor);
+                run_add_category();
                 Ok(())
             }
         },
@@ -191,28 +188,17 @@ fn cmd_handler<'a>(
 
 // Users
 
-fn run_get_user(reactor: &mut reactor::Core, id: u32) {
+fn run_get_user(id: u32) {
     // Build request
     let request = GetUserPayload {
         id: UserId::try_from(id).expect("Invalid id"),
     };
 
     // Call
-    let options = client::Options::default().handle(reactor.handle());
-    let response = reactor.run(
-        FutureClient::connect("localhost:10000".first_socket_addr(), options)
-            .map_err(tarpc::Error::from)
-            .and_then(|client| client.get_user(request))
-    );
-
-    // Response
-    match response {
-        Ok(value) => println!("The server responded with: {:#?}", value),
-        Err(error) => println!("The server responded with error: {:#?}", error),
-    }
+    run_client_action(move |client| client.get_user(request));
 }
 
-fn run_add_user(reactor: &mut reactor::Core, id: u32, username: Username) {
+fn run_add_user(id: u32, username: Username) {
     // Build request
     let request = AddUserPayload {
         id: UserId::try_from(id).expect("Invalid id"),
@@ -220,40 +206,45 @@ fn run_add_user(reactor: &mut reactor::Core, id: u32, username: Username) {
     };
 
     // Call
-    let options = client::Options::default().handle(reactor.handle());
-    let response = reactor.run(
-            FutureClient::connect("localhost:10000".first_socket_addr(), options)
-                .map_err(tarpc::Error::from)
-                .and_then(|client| client.add_user(request))
-    );
-
-    // Response
-    match response {
-        Ok(value) => println!("The server responded with: {:#?}", value),
-        Err(error) => println!("The server responded with error: {:#?}", error),
-    }
+    run_client_action(|client| client.add_user(request));
 }
 
 // Categories
 
-fn run_add_category(reactor: &mut reactor::Core) {
+fn run_add_category() {
     // Build request
     let title = Title::try_from("Test cat title".to_string()).expect("Invalid title");
     let description =
         Description::try_from("Test cat description".to_string()).expect("Invalid description");
     let request = AddCategoryPayload { title, description };
-    
-    // Call
-    let options = client::Options::default().handle(reactor.handle());
-    let response = reactor.run(
-        FutureClient::connect("localhost:10000".first_socket_addr(), options)
-            .map_err(tarpc::Error::from)
-            .and_then(|client| client.add_category(request))
-    );
 
-    // Response
-    match response {
-        Ok(value) => println!("The server responded with: {:#?}", value),
-        Err(error) => println!("The server responded with error: {:#?}", error),
+    // Call
+    run_client_action(|client| client.add_category(request));
+}
+
+// Connect to server
+fn connect() -> Option<SyncClient> {
+    let options = client::Options::default();
+    let addr = "localhost:10000".first_socket_addr();
+
+    SyncClient::connect(addr, options)
+        .map_err(|e| println!("Error connecting: {:#?}", e))
+        .ok()
+}
+
+// Run a action on the server and print the result
+fn run_client_action<T, E, F>(f: F)
+    where
+        T: Debug,
+        E: Debug,
+        F: FnOnce(SyncClient) -> Result<T, E>
+    {
+    if let Some(client) = connect() {
+        match f(client) {
+            Ok(value) => println!("The server responded with: {:#?}", value),
+            Err(error) => println!("The server responded with error: {:#?}", error),
+        }
     }
 }
+
+
