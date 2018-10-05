@@ -1,40 +1,41 @@
 use crate::db::{self, DbConn};
-use crate::error::{Error, ErrorKind};
 use crate::types::User;
+use crate::{IntResult, IntError, IntErrorKind};
 
 use datatypes::content::requests::*;
 use datatypes::content::responses::*;
-use datatypes::error::ResponseResult;
 
 use failure::ResultExt;
 use std::convert::TryInto;
 
-pub fn get_user(con: &DbConn, payload: GetUserPayload) -> ResponseResult<UserPayload> {
-    trace!("get_user {:?}", payload);
+pub fn get_user(con: &DbConn, payload: GetUserPayload) -> IntResult<UserPayload> {
+    debug!("get_user: {:?}", payload);
     db::users::get_user(&con, &payload.id)
         .and_then(|p| {
+            debug!("got payload from db: {:?}", p);
             <User as TryInto<UserPayload>>::try_into(p)
-                .context(ErrorKind::ServerError)
-                .map_err(Error::from)
-        }).map_err(|e| e.into())
+                .context(IntErrorKind::ServerError)
+                .map_err(IntError::from)
+        })
 }
 
-pub fn add_user(con: &DbConn, payload: AddUserPayload) -> ResponseResult<UserPayload> {
-    trace!("add_user {:?}", payload);
+pub fn add_user(con: &DbConn, payload: AddUserPayload) -> IntResult<UserPayload> {
+    debug!("add_user: {:?}", payload);
     db::users::insert_user(&con, &payload.id, &payload.username)
         .and_then(|p| {
+            debug!("got payload from db: {:?}", p);
             <User as TryInto<UserPayload>>::try_into(p)
-                .context(ErrorKind::ServerError)
-                .map_err(Error::from)
-        }).map_err(|e| e.into())
+                .context(IntErrorKind::ServerError)
+                .map_err(IntError::from)
+        })
 }
 
-pub fn edit_user(con: &DbConn, payload: EditUserPayload) -> ResponseResult<UserPayload> {
+pub fn edit_user(con: &DbConn, payload: EditUserPayload) -> IntResult<UserPayload> {
     trace!("edit_user {:?}", payload);
     unimplemented!()
 }
 
-pub fn upload_avatar(con: &DbConn, payload: UploadAvatarPayload) -> ResponseResult<UserPayload> {
+pub fn upload_avatar(con: &DbConn, payload: UploadAvatarPayload) -> IntResult<UserPayload> {
     trace!("upload_avatar {:?}", payload);
     unimplemented!()
 }

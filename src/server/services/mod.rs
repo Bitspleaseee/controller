@@ -63,8 +63,22 @@ macro_rules! impl_service {
             let f = futures::lazy(move || {
                 cloned_pool
                     .get()
-                    .map_err(|_| ResponseError::InternalServerError)
-                    .and_then(|con| $s_type::$s_name(&con, payload))
+                    .map_err(|e| {
+                        error!("unable to get database connection from the pool: {}", e);
+                        ResponseError::InternalServerError
+                    })
+                    .and_then(|con|
+                        $s_type::$s_name(&con, payload)
+                            .map(|p| {
+                                info!("sending success");
+                                p
+                            })
+                            .map_err(|e| {
+                                let ee = e.into();
+                                info!("sending error: {}", ee);
+                                ee
+                            })
+                    )
             });
             self.pool.spawn(f)
         }

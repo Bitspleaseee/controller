@@ -30,7 +30,7 @@ pub fn insert_user(connection: &DbConn, user_id: &UserId, user_name: &Username) 
 pub fn get_user(connection: &DbConn, user_id: &UserId) -> IntResult<User> {
     use super::schema::users::dsl::{id, users};
 
-    trace!("Getting user ({:?})", user_id);
+    trace!("Getting user with id ({})", user_id);
 
     users
         .filter(id.eq(*(*user_id)))
@@ -38,7 +38,14 @@ pub fn get_user(connection: &DbConn, user_id: &UserId) -> IntResult<User> {
         .optional()
         .context(IntErrorKind::QueryError)?
         .ok_or(IntErrorKind::ContentNotFound)
-        .map_err(|e| e.into())
+        .map(|u| {
+            trace!("Found user with id ({}: {})", user_id, &u.username);
+            u
+        })
+        .map_err(|e| {
+            trace!("Did not find user with id ({})", user_id);
+            e.into()
+        })
 }
 
 /// Deletes an existing user from the user table

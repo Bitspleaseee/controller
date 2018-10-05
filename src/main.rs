@@ -90,7 +90,7 @@ fn run() -> IntResult<()> {
 
 fn main() {
     if let Err(e) = run() {
-        error!("{}", e);
+        error!("{:?}", e);
         std::process::exit(1)
     } else {
         std::process::exit(0)

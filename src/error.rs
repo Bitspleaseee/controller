@@ -1,8 +1,8 @@
-use datatypes::content::responses::ContentError;
-use datatypes::error::ResponseError;
 use failure::{Backtrace, Context, Fail};
 use std::convert::From;
 use std::fmt::{self, Display};
+
+use datatypes::error::ResponseError;
 
 /// The type of an internal error ([struct.Error.html])
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
@@ -98,9 +98,7 @@ impl Into<ResponseError> for Error {
         match self.kind() {
             ErrorKind::ConnectionError => ResponseError::InternalServerError,
             ErrorKind::QueryError => ResponseError::InternalServerError,
-            ErrorKind::ContentNotFound => {
-                ResponseError::ContentRequestError(ContentError::MissingContent)
-            }
+            ErrorKind::ContentNotFound => ResponseError::MissingContent,
             ErrorKind::ServerError => ResponseError::InternalServerError,
         }
     }

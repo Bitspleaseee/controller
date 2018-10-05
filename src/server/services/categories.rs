@@ -3,32 +3,31 @@ use std::convert::TryInto;
 
 use datatypes::content::requests::*;
 use datatypes::content::responses::*;
-use datatypes::error::ResponseResult;
 
 use crate::db::{self, DbConn};
-use crate::error::ErrorKind;
+use crate::{IntResult, IntErrorKind};
 use crate::types::Category;
 
-pub fn get_category(con: &DbConn, payload: GetCategoryPayload) -> ResponseResult<CategoryPayload> {
+pub fn get_category(con: &DbConn, payload: GetCategoryPayload) -> IntResult<CategoryPayload> {
     trace!("get_category {:?}", payload);
     db::categories::get_category(&con, &payload.id)
         .and_then(|p| {
             <Category as TryInto<CategoryPayload>>::try_into(p)
-                .context(ErrorKind::ServerError)
+                .context(IntErrorKind::ServerError)
                 .map_err(|e| e.into())
-        }).map_err(|e| e.into())
+        })
 }
 
 pub fn get_categories(
     con: &DbConn,
     payload: GetHiddenPayload,
-) -> ResponseResult<Vec<CategoryPayload>> {
+) -> IntResult<Vec<CategoryPayload>> {
     trace!("get_categories {:?}", payload);
-    
+
     unimplemented!();
-    
+
     // TODO
-    
+
     /*
     // Convert from Iterator<Result<CategoryPayload, ValidationError>> to Vec<CategoryPayload>
     match db::categories::get_all_categories(&con, payload.include_hidden) {
@@ -49,12 +48,12 @@ pub fn get_categories(
     */
 }
 
-pub fn add_category(con: &DbConn, payload: AddCategoryPayload) -> ResponseResult<CategoryPayload> {
+pub fn add_category(con: &DbConn, payload: AddCategoryPayload) -> IntResult<CategoryPayload> {
     trace!("add_category {:?}", payload);
     db::categories::insert_category(&con, &payload.title, &payload.description)
         .and_then(|p| {
             <Category as TryInto<CategoryPayload>>::try_into(p)
-                .context(ErrorKind::ServerError)
+                .context(IntErrorKind::ServerError)
                 .map_err(|e| e.into())
         }).map_err(|e| e.into())
 }
@@ -62,7 +61,7 @@ pub fn add_category(con: &DbConn, payload: AddCategoryPayload) -> ResponseResult
 pub fn edit_category(
     con: &DbConn,
     payload: EditCategoryPayload,
-) -> ResponseResult<CategoryPayload> {
+) -> IntResult<CategoryPayload> {
     trace!("edit_category {:?}", payload);
 
     unimplemented!()
@@ -74,12 +73,12 @@ pub fn edit_category(
 pub fn hide_category(
     con: &DbConn,
     payload: HideCategoryPayload,
-) -> ResponseResult<CategoryPayload> {
+) -> IntResult<CategoryPayload> {
     trace!("hide_category {:?}", payload);
     db::categories::update_category_hidden(&con, &payload.id, payload.hide)
         .and_then(|p| {
             <Category as TryInto<CategoryPayload>>::try_into(p)
-                .context(ErrorKind::ServerError)
+                .context(IntErrorKind::ServerError)
                 .map_err(|e| e.into())
         }).map_err(|e| e.into())
 }
