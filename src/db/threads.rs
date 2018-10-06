@@ -11,37 +11,37 @@ use datatypes::valid::ids::*;
 /// Inserts a new thread into the thread table
 pub fn insert_thread(
     connection: &DbConn,
-    new_title: &Title,
-    new_description: &Description,
+    title: &Title,
+    description: &Description,
 ) -> IntResult<Thread> {
-    use super::schema::threads::dsl::{description, id, threads, title};
+    use super::schema::threads::dsl;
 
-    trace!("Inserting thread: {}", new_title);
+    trace!("Inserting thread: {}", title);
     Err(IntErrorKind::ServerError)?
 
-    //diesel::insert_into(threads)
+    //diesel::insert_into(dsl::threads)
     //    .values((
-    //        title.eq(new_title.as_ref()),
-    //        description.eq(new_description.as_ref()),
+    //        dsl::title.eq(title.as_ref()),
+    //        dsl::description.eq(description.as_ref()),
     //    )).execute(connection)
     //    .context(IntErrorKind::QueryError)
     //    .and_then(|_| {
     //        threads
-    //            .order(id.desc())
+    //            .order(dsl::id.desc())
     //            .first(connection)
     //            .context(IntErrorKind::ContentNotFound)
     //    }).map_err(|e| e.into())
 }
 
 /// Gets an exisiting thread from the thread table
-fn get_thread(connection: &DbConn, thread_id: &ThreadId) -> IntResult<Thread> {
-    use super::schema::threads::dsl::{id, threads};
+fn get_thread(connection: &DbConn, id: &ThreadId, include_hidden: bool) -> IntResult<Thread> {
+    use super::schema::threads::dsl;
 
-    trace!("Getting thread ({:?})", thread_id);
+    trace!("Getting thread ({:?})", id);
     Err(IntErrorKind::ServerError)?
 
-    //threads
-    //    .filter(id.eq(*(*thread_id)))
+    //dsl::threads
+    //    .filter(dsl::id.eq(*(*id)))
     //    .first::<Thread>(connection)
     //    .optional()
     //    .context(IntErrorKind::QueryError)?
@@ -51,8 +51,8 @@ fn get_thread(connection: &DbConn, thread_id: &ThreadId) -> IntResult<Thread> {
 
 /// Gets all the threads from the thread table
 pub fn get_all_threads(connection: &DbConn, include_hidden: bool) -> IntResult<Vec<Thread>> {
-    use super::schema::threads::dsl::{hidden, threads};
-
+    use super::schema::threads::dsl;
+    
     trace!("Getting all threads, include hidden: {}", include_hidden);
     Err(IntErrorKind::ServerError)?
 
@@ -66,11 +66,11 @@ pub fn get_all_threads(connection: &DbConn, include_hidden: bool) -> IntResult<V
 
 /// Clears the thread table
 pub fn delete_all_threads(connection: &DbConn) -> IntResult<usize> {
-    use super::schema::threads::dsl::threads;
+    use super::schema::threads::dsl;
 
     trace!("Deleting all threads");
 
-    diesel::delete(threads)
+    diesel::delete(dsl::threads)
         .execute(connection)
         .context(IntErrorKind::QueryError)
         .map_err(|e| e.into())
@@ -79,19 +79,19 @@ pub fn delete_all_threads(connection: &DbConn) -> IntResult<usize> {
 /// Updates an existing thread in the thread table
 pub fn update_thread(
     connection: &DbConn,
-    thread_id: &ThreadId,
-    new_title: &Title,
-    new_description: &Description,
+    id: &ThreadId,
+    title: &Title,
+    description: &Description,
 ) -> IntResult<Thread> {
-    use super::schema::threads::dsl::{description, id, threads, title};
+    use super::schema::threads::dsl;
 
-    trace!("Updating thread ({:?})", thread_id);
+    trace!("Updating thread ({:?})", id);
 
-    let num_updated = diesel::update(threads)
+    let num_updated = diesel::update(dsl::threads)
         .set((
-            title.eq(new_title.as_ref()),
-            description.eq(new_description.as_ref()),
-        )).filter(id.eq(*(*thread_id)))
+            dsl::title.eq(title.as_ref()),
+            dsl::description.eq(description.as_ref()),
+        )).filter(dsl::id.eq(*(*id)))
         .execute(connection)
         .context(IntErrorKind::QueryError)?;
 
