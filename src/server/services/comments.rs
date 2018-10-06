@@ -20,12 +20,30 @@ pub fn get_comment(con: &DbConn, payload: GetCommentPayload) -> IntResult<Commen
 
 pub fn get_comments(con: &DbConn, payload: GetCommentsPayload) -> IntResult<Vec<CommentPayload>> {
     trace!("get_comments {:?}", payload);
-    Err(IntErrorKind::ServerError)?
+
+    db::comments::get_comments_in_thread(&con, &payload.id, payload.include_hidden).and_then(
+        |comments| {
+            comments
+                .into_iter()
+                .map(|comment| comment.try_into())
+                .collect::<Result<Vec<CommentPayload>, _>>()
+                .context(IntErrorKind::ServerError)
+                .map_err(|e| e.into())
+        },
+    )
 }
 
 pub fn get_all_comments(con: &DbConn, payload: GetHiddenPayload) -> IntResult<Vec<CommentPayload>> {
     trace!("get_all_comments {:?}", payload);
-    Err(IntErrorKind::ServerError)?
+
+    db::comments::get_all_comments(&con, payload.include_hidden).and_then(|comments| {
+        comments
+            .into_iter()
+            .map(|comment| comment.try_into())
+            .collect::<Result<Vec<CommentPayload>, _>>()
+            .context(IntErrorKind::ServerError)
+            .map_err(|e| e.into())
+    })
 }
 
 pub fn add_comment(con: &DbConn, payload: AddCommentPayload) -> IntResult<CommentPayload> {

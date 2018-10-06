@@ -21,28 +21,14 @@ pub fn get_category(con: &DbConn, payload: GetCategoryPayload) -> IntResult<Cate
 pub fn get_categories(con: &DbConn, payload: GetHiddenPayload) -> IntResult<Vec<CategoryPayload>> {
     trace!("get_categories {:?}", payload);
 
-    Err(IntErrorKind::ServerError)?
-
-    // TODO
-
-    /*
-    // Convert from Iterator<Result<CategoryPayload, ValidationError>> to Vec<CategoryPayload>
-    match db::categories::get_all_categories(&con, payload.include_hidden) {
-        Ok(value) => Ok(value.into_iter().map(TryInto::try_into).collect()),
-        Err(error) => Err(error.into()),
-    }
-    */
-
-    /*
-    // Cannot infer type for `B`
-    db::categories::get_all_categories(&con, payload.include_hidden)
-        .and_then(|p| {
-            p.into_iter()
-                .map(TryInto::<CategoryPayload>::try_into)
-                .collect()
-                .map_err(|e| e.into())
-        }).map_err(|e| e.into())
-    */
+    db::categories::get_all_categories(&con, payload.include_hidden).and_then(|categories| {
+        categories
+            .into_iter()
+            .map(|category| category.try_into())
+            .collect::<Result<Vec<CategoryPayload>, _>>()
+            .context(IntErrorKind::ServerError)
+            .map_err(|e| e.into())
+    })
 }
 
 pub fn add_category(con: &DbConn, payload: AddCategoryPayload) -> IntResult<CategoryPayload> {

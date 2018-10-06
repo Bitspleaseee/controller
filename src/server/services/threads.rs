@@ -20,12 +20,30 @@ pub fn get_thread(con: &DbConn, payload: GetThreadPayload) -> IntResult<ThreadPa
 
 pub fn get_threads(con: &DbConn, payload: GetThreadsPayload) -> IntResult<Vec<ThreadPayload>> {
     trace!("get_threads {:?}", payload);
-    Err(IntErrorKind::ServerError)?
+
+    db::threads::get_threads_in_category(&con, &payload.id, payload.include_hidden).and_then(
+        |threads| {
+            threads
+                .into_iter()
+                .map(|thread| thread.try_into())
+                .collect::<Result<Vec<ThreadPayload>, _>>()
+                .context(IntErrorKind::ServerError)
+                .map_err(|e| e.into())
+        },
+    )
 }
 
 pub fn get_all_threads(con: &DbConn, payload: GetHiddenPayload) -> IntResult<Vec<ThreadPayload>> {
     trace!("get_all_threads {:?}", payload);
-    Err(IntErrorKind::ServerError)?
+
+    db::threads::get_all_threads(&con, payload.include_hidden).and_then(|threads| {
+        threads
+            .into_iter()
+            .map(|thread| thread.try_into())
+            .collect::<Result<Vec<ThreadPayload>, _>>()
+            .context(IntErrorKind::ServerError)
+            .map_err(|e| e.into())
+    })
 }
 
 pub fn add_thread(con: &DbConn, payload: AddThreadPayload) -> IntResult<ThreadPayload> {
