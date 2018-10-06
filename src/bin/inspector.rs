@@ -24,7 +24,6 @@ use tarpc::util::FirstSocketAddr;
 use datatypes::content::requests::*;
 use datatypes::content::responses::*;
 use datatypes::valid::fields::*;
-use datatypes::valid::ids::*;
 
 service! {
     rpc get_user(payload: GetUserPayload) -> UserPayload | ContentError;
@@ -175,7 +174,11 @@ fn cmd_handler<'a>(
             }
         },
         Mode::Categories => match cmd {
-            Cmd::Get => Ok(()),
+            Cmd::Get => {
+                let id = words.next().and_then(|w| w.parse().ok())?;
+                run_get_category(id);
+                Ok(())
+            },
             Cmd::Insert => {
                 run_add_category();
                 Ok(())
@@ -190,7 +193,7 @@ fn cmd_handler<'a>(
 fn run_get_user(id: u32) {
     // Build request
     let request = GetUserPayload {
-        id: UserId::try_from(id).expect("Invalid id"),
+        id: id.into()
     };
 
     // Call
@@ -200,7 +203,7 @@ fn run_get_user(id: u32) {
 fn run_add_user(id: u32, username: Username) {
     // Build request
     let request = AddUserPayload {
-        id: UserId::try_from(id).expect("Invalid id"),
+        id: id.into(),
         username,
     };
 
@@ -209,6 +212,14 @@ fn run_add_user(id: u32, username: Username) {
 }
 
 // Categories
+
+fn run_get_category(id: u32) {
+    let request = GetCategoryPayload {
+        id: id.into()
+    };
+
+    run_client_action(|client| client.get_category(request));
+}
 
 fn run_add_category() {
     // Build request
