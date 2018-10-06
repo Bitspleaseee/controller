@@ -99,7 +99,7 @@ impl TryInto<CommentPayload> for Comment {
         Ok(CommentPayload {
             id: self.id.into(),
             thread_id: self.thread_id.into(),
-            parent_id: self.parent_id.and_then(|pid| pid.try_into().ok()),
+            parent_id: self.parent_id.map(|pid| pid.into()),
             user_id: self.user_id.into(),
             content,
             timestamp: self.timestamp,
