@@ -17,8 +17,11 @@ pub fn get_comment(con: &DbConn, payload: GetCommentPayload) -> IntResult<Commen
     })
 }
 
-pub fn get_comments(con: &DbConn, payload: GetCommentsPayload) -> IntResult<Vec<CommentPayload>> {
-    trace!("get_comments {:?}", payload);
+pub fn get_comments_in_thread(
+    con: &DbConn,
+    payload: GetCommentsPayload,
+) -> IntResult<Vec<CommentPayload>> {
+    trace!("get_comments_in_thread {:?}", payload);
 
     db::comments::get_comments_in_thread(&con, &payload.id, payload.include_hidden).and_then(
         |comments| {

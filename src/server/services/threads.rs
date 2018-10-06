@@ -17,8 +17,11 @@ pub fn get_thread(con: &DbConn, payload: GetThreadPayload) -> IntResult<ThreadPa
     })
 }
 
-pub fn get_threads(con: &DbConn, payload: GetThreadsPayload) -> IntResult<Vec<ThreadPayload>> {
-    trace!("get_threads {:?}", payload);
+pub fn get_threads_in_category(
+    con: &DbConn,
+    payload: GetThreadsPayload,
+) -> IntResult<Vec<ThreadPayload>> {
+    trace!("get_threads_in_category {:?}", payload);
 
     db::threads::get_threads_in_category(&con, &payload.id, payload.include_hidden).and_then(
         |threads| {

@@ -18,20 +18,20 @@ service! {
     rpc upload_avatar(payload: UploadAvatarPayload) -> UserPayload | ContentError;
 
     rpc get_category(payload: GetCategoryPayload) -> CategoryPayload | ContentError;
-    rpc get_categories(payload: GetHiddenPayload) -> Vec<CategoryPayload> | ContentError;
+    rpc get_all_categories(payload: GetHiddenPayload) -> Vec<CategoryPayload> | ContentError;
     rpc add_category(payload: AddCategoryPayload) -> CategoryPayload | ContentError;
     rpc edit_category(payload: EditCategoryPayload) -> CategoryPayload | ContentError;
     rpc hide_category(payload: HideCategoryPayload) -> CategoryPayload | ContentError;
 
     rpc get_thread(payload: GetThreadPayload) -> ThreadPayload | ContentError;
-    rpc get_threads(payload: GetThreadsPayload) -> Vec<ThreadPayload> | ContentError;
+    rpc get_threads_in_category(payload: GetThreadsPayload) -> Vec<ThreadPayload> | ContentError;
     rpc get_all_threads(payload: GetHiddenPayload) -> Vec<ThreadPayload> | ContentError;
     rpc add_thread(payload: AddThreadPayload) -> ThreadPayload | ContentError;
     rpc edit_thread(payload: EditThreadPayload) -> ThreadPayload | ContentError;
     rpc hide_thread(payload: HideThreadPayload) -> ThreadPayload | ContentError;
 
     rpc get_comment(payload: GetCommentPayload) -> CommentPayload | ContentError;
-    rpc get_comments(payload: GetCommentsPayload) -> Vec<CommentPayload> | ContentError;
+    rpc get_comments_in_thread(payload: GetCommentsPayload) -> Vec<CommentPayload> | ContentError;
     rpc get_all_comments(payload: GetHiddenPayload) -> Vec<CommentPayload> | ContentError;
     rpc add_comment(payload: AddCommentPayload) -> CommentPayload | ContentError;
     rpc edit_comment(payload: EditCommentPayload) -> CommentPayload | ContentError;
@@ -103,9 +103,9 @@ impl FutureService for Server {
     );
     impl_service!(
         categories,
-        get_categories,
+        get_all_categories,
         GetHiddenPayload,
-        GetCategoriesFut,
+        GetAllCategoriesFut,
         CategoriesRes
     );
     impl_service!(
@@ -140,9 +140,9 @@ impl FutureService for Server {
     );
     impl_service!(
         threads,
-        get_threads,
+        get_threads_in_category,
         GetThreadsPayload,
-        GetThreadsFut,
+        GetThreadsInCategoryFut,
         ThreadsRes
     );
     impl_service!(
@@ -184,9 +184,9 @@ impl FutureService for Server {
     );
     impl_service!(
         comments,
-        get_comments,
+        get_comments_in_thread,
         GetCommentsPayload,
-        GetCommentsFut,
+        GetCommentsInThreadFut,
         CommentsRes
     );
     impl_service!(

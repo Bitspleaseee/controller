@@ -17,8 +17,11 @@ pub fn get_category(con: &DbConn, payload: GetCategoryPayload) -> IntResult<Cate
     })
 }
 
-pub fn get_categories(con: &DbConn, payload: GetHiddenPayload) -> IntResult<Vec<CategoryPayload>> {
-    trace!("get_categories {:?}", payload);
+pub fn get_all_categories(
+    con: &DbConn,
+    payload: GetHiddenPayload,
+) -> IntResult<Vec<CategoryPayload>> {
+    trace!("get_all_categories {:?}", payload);
 
     db::categories::get_all_categories(&con, payload.include_hidden).and_then(|categories| {
         categories
