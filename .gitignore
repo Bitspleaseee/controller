@@ -28,3 +28,6 @@
 
 # Controller log file
 controller.log
+
+# History file for inspector
+history.txt
