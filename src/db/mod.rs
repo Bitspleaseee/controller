@@ -7,6 +7,7 @@ use failure::ResultExt;
 use crate::{IntErrorKind, IntResult};
 
 pub mod categories;
+pub mod comments;
 pub mod schema;
 pub mod threads;
 pub mod users;

@@ -14,6 +14,7 @@ table! {
         parent_id -> Nullable<Unsigned<Integer>>,
         user_id -> Unsigned<Integer>,
         content -> Text,
+        timestamp -> Datetime,
         hidden -> Bool,
     }
 }
@@ -44,9 +45,4 @@ joinable!(comments -> users (user_id));
 joinable!(threads -> categories (category_id));
 joinable!(threads -> users (user_id));
 
-allow_tables_to_appear_in_same_query!(
-    categories,
-    comments,
-    threads,
-    users,
-);
+allow_tables_to_appear_in_same_query!(categories, comments, threads, users,);

@@ -5,6 +5,7 @@ CREATE TABLE comments (
   parent_id INT UNSIGNED NULL,
   user_id INT UNSIGNED NOT NULL,
   content TEXT NOT NULL,
+  timestamp DATETIME NOT NULL DEFAULT NOW(),
   hidden BOOLEAN NOT NULL DEFAULT 0,
 
   PRIMARY KEY (id),

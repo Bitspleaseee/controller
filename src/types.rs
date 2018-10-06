@@ -6,7 +6,7 @@ use datatypes::valid::ValidationError;
 use chrono::naive::NaiveDateTime;
 use std::convert::TryInto;
 
-#[derive(Queryable, Insertable, AsChangeset, Debug, Serialize, Deserialize)]
+#[derive(Queryable, AsChangeset, Debug, Serialize, Deserialize)]
 #[table_name = "users"]
 pub struct User {
     pub id: u32,
@@ -60,6 +60,7 @@ pub struct Thread {
     pub title: String,
     pub description: String,
     pub timestamp: NaiveDateTime,
+    pub hidden: bool,
 }
 
 impl TryInto<ThreadPayload> for Thread {
@@ -74,6 +75,35 @@ impl TryInto<ThreadPayload> for Thread {
             title,
             description,
             timestamp: self.timestamp,
+            hidden: self.hidden,
+        })
+    }
+}
+
+#[derive(Queryable, Debug, AsChangeset, Serialize, Deserialize)]
+#[table_name = "comments"]
+pub struct Comment {
+    pub id: u32,
+    pub thread_id: u32,
+    pub parent_id: Option<u32>,
+    pub user_id: u32,
+    pub content: String,
+    pub timestamp: NaiveDateTime,
+    pub hidden: bool,
+}
+
+impl TryInto<CommentPayload> for Comment {
+    type Error = ValidationError;
+    fn try_into(self) -> Result<CommentPayload, Self::Error> {
+        let content = self.content.try_into()?;
+        Ok(CommentPayload {
+            id: self.id.into(),
+            thread_id: self.thread_id.into(),
+            parent_id: self.parent_id.and_then(|pid| pid.try_into().ok()),
+            user_id: self.user_id.into(),
+            content,
+            timestamp: self.timestamp,
+            hidden: self.hidden,
         })
     }
 }
