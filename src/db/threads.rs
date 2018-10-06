@@ -34,7 +34,7 @@ pub fn insert_thread(
 }
 
 /// Gets an exisiting thread from the thread table
-fn get_thread(connection: &DbConn, id: &ThreadId, include_hidden: bool) -> IntResult<Thread> {
+pub fn get_thread(connection: &DbConn, id: &ThreadId, include_hidden: bool) -> IntResult<Thread> {
     use super::schema::threads::dsl;
 
     trace!("Getting thread ({:?})", id);
@@ -52,7 +52,7 @@ fn get_thread(connection: &DbConn, id: &ThreadId, include_hidden: bool) -> IntRe
 /// Gets all the threads from the thread table
 pub fn get_all_threads(connection: &DbConn, include_hidden: bool) -> IntResult<Vec<Thread>> {
     use super::schema::threads::dsl;
-    
+
     trace!("Getting all threads, include hidden: {}", include_hidden);
     Err(IntErrorKind::ServerError)?
 
@@ -100,5 +100,24 @@ pub fn update_thread(
     } else {
         //get_thread(&connection, )
         Err(IntErrorKind::ContentNotFound)?
+    }
+}
+
+/// Updates the hidden flag for an existing thread in the thread table
+pub fn update_thread_hidden(connection: &DbConn, id: &ThreadId, hidden: bool) -> IntResult<Thread> {
+    use super::schema::threads::dsl;
+
+    trace!("Updating thread hidden flag ({:?})", id);
+
+    let num_updated = diesel::update(dsl::threads)
+        .set(dsl::hidden.eq(hidden))
+        .filter(dsl::id.eq(*(*id)))
+        .execute(connection)
+        .context(IntErrorKind::QueryError)?;
+
+    if num_updated == 0 {
+        Err(IntErrorKind::ContentNotFound)?
+    } else {
+        get_thread(&connection, id, true)
     }
 }

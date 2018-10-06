@@ -10,11 +10,12 @@ use crate::{IntErrorKind, IntResult};
 
 pub fn get_category(con: &DbConn, payload: GetCategoryPayload) -> IntResult<CategoryPayload> {
     trace!("get_category {:?}", payload);
-    db::categories::get_category(&con, &payload.id, payload.include_hidden).and_then(|p| {
-        <Category as TryInto<CategoryPayload>>::try_into(p)
-            .context(IntErrorKind::ServerError)
-            .map_err(|e| e.into())
-    })
+    db::categories::get_category(&con, &payload.id, payload.include_hidden)
+        .and_then(|p| {
+            <Category as TryInto<CategoryPayload>>::try_into(p)
+                .context(IntErrorKind::ServerError)
+                .map_err(|e| e.into())
+        }).map_err(|e| e.into())
 }
 
 pub fn get_categories(con: &DbConn, payload: GetHiddenPayload) -> IntResult<Vec<CategoryPayload>> {
