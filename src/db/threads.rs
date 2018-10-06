@@ -17,7 +17,7 @@ pub fn insert_thread(
     use super::schema::threads::dsl::{description, id, threads, title};
 
     trace!("Inserting thread: {}", new_title);
-    unimplemented!();
+    Err(IntErrorKind::ServerError)?
 
     //diesel::insert_into(threads)
     //    .values((
@@ -38,7 +38,7 @@ fn get_thread(connection: &DbConn, thread_id: &ThreadId) -> IntResult<Thread> {
     use super::schema::threads::dsl::{id, threads};
 
     trace!("Getting thread ({:?})", thread_id);
-    unimplemented!();
+    Err(IntErrorKind::ServerError)?
 
     //threads
     //    .filter(id.eq(*(*thread_id)))
@@ -54,7 +54,7 @@ pub fn get_all_threads(connection: &DbConn, include_hidden: bool) -> IntResult<V
     use super::schema::threads::dsl::{hidden, threads};
 
     trace!("Getting all threads, include hidden: {}", include_hidden);
-    unimplemented!();
+    Err(IntErrorKind::ServerError)?
 
     //if include_hidden {
     //    threads.get_results(connection)

@@ -32,10 +32,10 @@ pub fn add_user(con: &DbConn, payload: AddUserPayload) -> IntResult<UserPayload>
 
 pub fn edit_user(con: &DbConn, payload: EditUserPayload) -> IntResult<UserPayload> {
     trace!("edit_user {:?}", payload);
-    unimplemented!()
+    Err(IntErrorKind::ServerError)?
 }
 
 pub fn upload_avatar(con: &DbConn, payload: UploadAvatarPayload) -> IntResult<UserPayload> {
     trace!("upload_avatar {:?}", payload);
-    unimplemented!()
+    Err(IntErrorKind::ServerError)?
 }

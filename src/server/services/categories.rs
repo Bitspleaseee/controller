@@ -24,7 +24,7 @@ pub fn get_categories(
 ) -> IntResult<Vec<CategoryPayload>> {
     trace!("get_categories {:?}", payload);
 
-    unimplemented!();
+    Err(IntErrorKind::ServerError)?
 
     // TODO
 
@@ -64,7 +64,7 @@ pub fn edit_category(
 ) -> IntResult<CategoryPayload> {
     trace!("edit_category {:?}", payload);
 
-    unimplemented!()
+    Err(IntErrorKind::ServerError)?
     // TODO: Implement edit_category
     // Make db::categories::update_category use a changeset and take a CategoryPayload
     // Requires From<CategoryPayload> for types::Category

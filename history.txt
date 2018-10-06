@@ -1,0 +1,7 @@
+mode users
+insert 1 john
+insert 2 liza
+get 1
+get 2
+get 3
+get 9
