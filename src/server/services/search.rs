@@ -1,5 +1,5 @@
 use crate::db::{self, DbConn};
-use crate::{IntResult, IntErrorKind};
+use crate::{IntErrorKind, IntResult};
 
 use datatypes::content::requests::*;
 use datatypes::content::responses::*;

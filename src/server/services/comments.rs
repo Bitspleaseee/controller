@@ -1,5 +1,5 @@
 use crate::db::{self, DbConn};
-use crate::{IntResult, IntErrorKind};
+use crate::{IntErrorKind, IntResult};
 
 use datatypes::content::requests::*;
 use datatypes::content::responses::*;
@@ -14,7 +14,7 @@ pub fn get_comments(con: &DbConn, payload: GetCommentsPayload) -> IntResult<Vec<
     Err(IntErrorKind::ServerError)?
 }
 
-pub fn get_all_comments( con: &DbConn, payload: GetHiddenPayload) -> IntResult<Vec<CommentPayload>> {
+pub fn get_all_comments(con: &DbConn, payload: GetHiddenPayload) -> IntResult<Vec<CommentPayload>> {
     trace!("get_all_comments {:?}", payload);
     Err(IntErrorKind::ServerError)?
 }

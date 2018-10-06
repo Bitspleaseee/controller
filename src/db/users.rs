@@ -41,8 +41,7 @@ pub fn get_user(connection: &DbConn, user_id: &UserId) -> IntResult<User> {
         .map(|u| {
             trace!("Found user with id ({}: {})", user_id, &u.username);
             u
-        })
-        .map_err(|e| {
+        }).map_err(|e| {
             trace!("Did not find user with id ({})", user_id);
             e.into()
         })

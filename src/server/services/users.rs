@@ -1,6 +1,6 @@
 use crate::db::{self, DbConn};
 use crate::types::User;
-use crate::{IntResult, IntError, IntErrorKind};
+use crate::{IntError, IntErrorKind, IntResult};
 
 use datatypes::content::requests::*;
 use datatypes::content::responses::*;
@@ -10,24 +10,22 @@ use std::convert::TryInto;
 
 pub fn get_user(con: &DbConn, payload: GetUserPayload) -> IntResult<UserPayload> {
     debug!("get_user: {:?}", payload);
-    db::users::get_user(&con, &payload.id)
-        .and_then(|p| {
-            debug!("got payload from db: {:?}", p);
-            <User as TryInto<UserPayload>>::try_into(p)
-                .context(IntErrorKind::ServerError)
-                .map_err(IntError::from)
-        })
+    db::users::get_user(&con, &payload.id).and_then(|p| {
+        debug!("got payload from db: {:?}", p);
+        <User as TryInto<UserPayload>>::try_into(p)
+            .context(IntErrorKind::ServerError)
+            .map_err(IntError::from)
+    })
 }
 
 pub fn add_user(con: &DbConn, payload: AddUserPayload) -> IntResult<UserPayload> {
     debug!("add_user: {:?}", payload);
-    db::users::insert_user(&con, &payload.id, &payload.username)
-        .and_then(|p| {
-            debug!("got payload from db: {:?}", p);
-            <User as TryInto<UserPayload>>::try_into(p)
-                .context(IntErrorKind::ServerError)
-                .map_err(IntError::from)
-        })
+    db::users::insert_user(&con, &payload.id, &payload.username).and_then(|p| {
+        debug!("got payload from db: {:?}", p);
+        <User as TryInto<UserPayload>>::try_into(p)
+            .context(IntErrorKind::ServerError)
+            .map_err(IntError::from)
+    })
 }
 
 pub fn edit_user(con: &DbConn, payload: EditUserPayload) -> IntResult<UserPayload> {

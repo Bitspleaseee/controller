@@ -137,8 +137,7 @@ fn main() {
                         .nth(1)
                         .map(|mode_str| state.try_set_mode(mode_str));
                 } else {
-                    cmd_handler(&state, &line)
-                        .unwrap_or_else(|err| println!("Error: {:?}", err));
+                    cmd_handler(&state, &line).unwrap_or_else(|err| println!("Error: {:?}", err));
                 }
             }
             Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => break,
@@ -151,10 +150,7 @@ fn main() {
     rl.save_history("history.txt").unwrap();
 }
 
-fn cmd_handler<'a>(
-    state: &State,
-    s: &'a str,
-) -> Result<(), std::option::NoneError> {
+fn cmd_handler<'a>(state: &State, s: &'a str) -> Result<(), std::option::NoneError> {
     let mut words = s.split(char::is_whitespace);
     let cmd = words.next().and_then(|w| w.try_into().ok())?;
     match state.mode {
@@ -178,7 +174,7 @@ fn cmd_handler<'a>(
                 let id = words.next().and_then(|w| w.parse().ok())?;
                 run_get_category(id);
                 Ok(())
-            },
+            }
             Cmd::Insert => {
                 run_add_category();
                 Ok(())
@@ -192,9 +188,7 @@ fn cmd_handler<'a>(
 
 fn run_get_user(id: u32) {
     // Build request
-    let request = GetUserPayload {
-        id: id.into()
-    };
+    let request = GetUserPayload { id: id.into() };
 
     // Call
     run_client_action(move |client| client.get_user(request));
@@ -215,7 +209,8 @@ fn run_add_user(id: u32, username: Username) {
 
 fn run_get_category(id: u32) {
     let request = GetCategoryPayload {
-        id: id.into()
+        id: id.into(),
+        include_hidden: true,
     };
 
     run_client_action(|client| client.get_category(request));
@@ -244,11 +239,11 @@ fn connect() -> Option<SyncClient> {
 
 // Run a action on the server and print the result
 fn run_client_action<T, E, F>(f: F)
-    where
-        T: Debug,
-        E: Debug,
-        F: FnOnce(SyncClient) -> Result<T, E>
-    {
+where
+    T: Debug,
+    E: Debug,
+    F: FnOnce(SyncClient) -> Result<T, E>,
+{
     if let Some(client) = connect() {
         match f(client) {
             Ok(value) => println!("The server responded with: {:#?}", value),
@@ -256,5 +251,3 @@ fn run_client_action<T, E, F>(f: F)
         }
     }
 }
-
-

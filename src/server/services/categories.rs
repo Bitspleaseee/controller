@@ -5,23 +5,19 @@ use datatypes::content::requests::*;
 use datatypes::content::responses::*;
 
 use crate::db::{self, DbConn};
-use crate::{IntResult, IntErrorKind};
 use crate::types::Category;
+use crate::{IntErrorKind, IntResult};
 
 pub fn get_category(con: &DbConn, payload: GetCategoryPayload) -> IntResult<CategoryPayload> {
     trace!("get_category {:?}", payload);
-    db::categories::get_category(&con, &payload.id)
-        .and_then(|p| {
-            <Category as TryInto<CategoryPayload>>::try_into(p)
-                .context(IntErrorKind::ServerError)
-                .map_err(|e| e.into())
-        })
+    db::categories::get_category(&con, &payload.id).and_then(|p| {
+        <Category as TryInto<CategoryPayload>>::try_into(p)
+            .context(IntErrorKind::ServerError)
+            .map_err(|e| e.into())
+    })
 }
 
-pub fn get_categories(
-    con: &DbConn,
-    payload: GetHiddenPayload,
-) -> IntResult<Vec<CategoryPayload>> {
+pub fn get_categories(con: &DbConn, payload: GetHiddenPayload) -> IntResult<Vec<CategoryPayload>> {
     trace!("get_categories {:?}", payload);
 
     Err(IntErrorKind::ServerError)?
@@ -58,10 +54,7 @@ pub fn add_category(con: &DbConn, payload: AddCategoryPayload) -> IntResult<Cate
         }).map_err(|e| e.into())
 }
 
-pub fn edit_category(
-    con: &DbConn,
-    payload: EditCategoryPayload,
-) -> IntResult<CategoryPayload> {
+pub fn edit_category(con: &DbConn, payload: EditCategoryPayload) -> IntResult<CategoryPayload> {
     trace!("edit_category {:?}", payload);
 
     Err(IntErrorKind::ServerError)?
@@ -70,10 +63,7 @@ pub fn edit_category(
     // Requires From<CategoryPayload> for types::Category
 }
 
-pub fn hide_category(
-    con: &DbConn,
-    payload: HideCategoryPayload,
-) -> IntResult<CategoryPayload> {
+pub fn hide_category(con: &DbConn, payload: HideCategoryPayload) -> IntResult<CategoryPayload> {
     trace!("hide_category {:?}", payload);
     db::categories::update_category_hidden(&con, &payload.id, payload.hide)
         .and_then(|p| {
