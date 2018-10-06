@@ -2,7 +2,7 @@ use failure::{Backtrace, Context, Fail};
 use std::convert::From;
 use std::fmt::{self, Display};
 
-use datatypes::error::ResponseError;
+use datatypes::content::responses::ContentError;
 
 /// The type of an internal error ([struct.Error.html])
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
@@ -93,13 +93,13 @@ impl From<Context<ErrorKind>> for Error {
     }
 }
 
-impl Into<ResponseError> for Error {
-    fn into(self) -> ResponseError {
+impl Into<ContentError> for Error {
+    fn into(self) -> ContentError {
         match self.kind() {
-            ErrorKind::ConnectionError => ResponseError::InternalServerError,
-            ErrorKind::QueryError => ResponseError::InternalServerError,
-            ErrorKind::ContentNotFound => ResponseError::MissingContent,
-            ErrorKind::ServerError => ResponseError::InternalServerError,
+            ErrorKind::ConnectionError => ContentError::InternalServerError,
+            ErrorKind::QueryError => ContentError::InternalServerError,
+            ErrorKind::ContentNotFound => ContentError::MissingContent,
+            ErrorKind::ServerError => ContentError::InternalServerError,
         }
     }
 }
