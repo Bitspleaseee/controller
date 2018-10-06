@@ -68,13 +68,9 @@ macro_rules! impl_service {
                     })
                     .and_then(|con|
                         $s_type::$s_name(&con, payload)
-                            .map(|p| {
-                                info!("sending success");
-                                p
-                            })
                             .map_err(|e| {
                                 let ee = e.into();
-                                info!("sending error: {}", ee);
+                                error!("sending error: {}", ee);
                                 ee
                             })
                     )
