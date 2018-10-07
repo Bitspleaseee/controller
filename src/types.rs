@@ -62,7 +62,7 @@ impl From<AddUserPayload> for InsertUser {
     }
 }
 
-#[derive(Identifiable, Queryable, Debug, Serialize, Deserialize)]
+#[derive(Identifiable, Queryable, Debug, Serialize, Deserialize, PartialEq)]
 #[table_name = "categories"]
 pub struct Category {
     pub id: u32,
@@ -132,7 +132,7 @@ impl From<AddCategoryPayload> for InsertCategory {
     }
 }
 
-#[derive(Identifiable, Associations, Queryable, Debug, Serialize, Deserialize)]
+#[derive(Identifiable, Associations, Queryable, Debug, Serialize, Deserialize, PartialEq)]
 #[belongs_to(Category)]
 #[belongs_to(User)]
 pub struct Thread {
@@ -213,7 +213,7 @@ impl From<AddThreadPayload> for InsertThread {
     }
 }
 
-#[derive(Identifiable, Associations, Queryable, Debug, Serialize, Deserialize)]
+#[derive(Identifiable, Associations, Queryable, Debug, Serialize, Deserialize, PartialEq)]
 #[belongs_to(Thread)]
 #[belongs_to(User)]
 pub struct Comment {

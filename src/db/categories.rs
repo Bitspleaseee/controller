@@ -111,3 +111,117 @@ pub fn update_category(con: &DbConn, category: impl Into<UpdateCategory>) -> Int
             e.into()
         })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::establish_connection;
+
+    #[test]
+    fn insert_and_get() {
+        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        assert!(delete_all_categories(&con).is_ok());
+
+        let insert_data = InsertCategory {
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+        };
+
+        let mut expected_data = Category {
+            id: 1,
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+            hidden: false,
+        };
+
+        // Insert
+        let returned_data = insert_category(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Compare
+        expected_data.id = returned_data.id;
+        assert_eq!(returned_data, expected_data);
+
+        // Get
+        let returned_data = get_category(&con, returned_data.id.into(), false);
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Compare
+        assert_eq!(returned_data, expected_data);
+    }
+
+    #[test]
+    fn update() {
+        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        assert!(delete_all_categories(&con).is_ok());
+
+        let insert_data = InsertCategory {
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+        };
+
+        let mut update_data = UpdateCategory {
+            id: 1,
+            title: Some("OtherTitle".to_string()),
+            description: Some("OtherDescription".to_string()),
+            hidden: Some(true),
+        };
+
+        let mut expected_data = Category {
+            id: 1,
+            title: "OtherTitle".to_string(),
+            description: "OtherDescription".to_string(),
+            hidden: true,
+        };
+
+        // Insert
+        let returned_data = insert_category(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Update
+        update_data.id = returned_data.id;
+        let returned_data = update_category(&con, update_data);
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Compare
+        expected_data.id = returned_data.id;
+        assert_eq!(returned_data, expected_data);
+    }
+
+    #[test]
+    fn hide() {
+        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        assert!(delete_all_categories(&con).is_ok());
+
+        let insert_data = InsertCategory {
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+        };
+
+        let mut update_data = UpdateCategory {
+            id: 1,
+            title: None,
+            description: None,
+            hidden: Some(true),
+        };
+
+        // insert
+        let returned_data = insert_category(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Get
+        assert!(get_category(&con, returned_data.id.into(), false).is_ok());
+
+        // Delete
+        update_data.id = returned_data.id;
+        assert!(update_category(&con, update_data).is_ok());
+
+        // Fail to get
+        assert!(get_category(&con, returned_data.id.into(), false).is_err());
+    }
+}
