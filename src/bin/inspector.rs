@@ -24,8 +24,6 @@ use tarpc::util::FirstSocketAddr;
 
 use datatypes::content::requests::*;
 use datatypes::content::responses::*;
-use datatypes::valid::fields::*;
-use datatypes::valid::ids::*;
 
 use failure::Fallible;
 macro_rules! enum_str {

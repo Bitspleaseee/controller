@@ -12,25 +12,33 @@ pub fn search(con: &DbConn, payload: SearchPayload) -> IntResult<SearchResultsPa
 
     let res = db::search::search(con, payload)?;
 
-    let users = res.users.into_iter()
-            .map(|i| i.try_into())
-            .collect::<Result<Vec<UserPayload>, _>>()
-            .context(IntErrorKind::ServerError)?;
+    let users = res
+        .users
+        .into_iter()
+        .map(|i| i.try_into())
+        .collect::<Result<Vec<UserPayload>, _>>()
+        .context(IntErrorKind::ServerError)?;
 
-    let categories = res.categories.into_iter()
-            .map(|i| i.try_into())
-            .collect::<Result<Vec<CategoryPayload>, _>>()
-            .context(IntErrorKind::ServerError)?;
+    let categories = res
+        .categories
+        .into_iter()
+        .map(|i| i.try_into())
+        .collect::<Result<Vec<CategoryPayload>, _>>()
+        .context(IntErrorKind::ServerError)?;
 
-    let threads = res.threads.into_iter()
-            .map(|i| i.try_into())
-            .collect::<Result<Vec<ThreadPayload>, _>>()
-            .context(IntErrorKind::ServerError)?;
+    let threads = res
+        .threads
+        .into_iter()
+        .map(|i| i.try_into())
+        .collect::<Result<Vec<ThreadPayload>, _>>()
+        .context(IntErrorKind::ServerError)?;
 
-    let comments = res.comments.into_iter()
-            .map(|i| i.try_into())
-            .collect::<Result<Vec<CommentPayload>, _>>()
-            .context(IntErrorKind::ServerError)?;
+    let comments = res
+        .comments
+        .into_iter()
+        .map(|i| i.try_into())
+        .collect::<Result<Vec<CommentPayload>, _>>()
+        .context(IntErrorKind::ServerError)?;
 
     Ok(SearchResultsPayload {
         categories,

@@ -2,7 +2,7 @@ use diesel::prelude::*;
 use failure::ResultExt;
 
 use super::{DbConn, MAX_SEARCH_LIMIT};
-use crate::types::{Category, Comment, Thread, User, SearchResults};
+use crate::types::{Category, Comment, SearchResults, Thread, User};
 use crate::{IntErrorKind, IntResult};
 
 use datatypes::content::requests::*;
@@ -20,7 +20,11 @@ pub fn search_user(con: &DbConn, query: &str) -> IntResult<Vec<User>> {
         })
 }
 
-pub fn search_category(con: &DbConn, query: &str, include_hidden: bool) -> IntResult<Vec<Category>> {
+pub fn search_category(
+    con: &DbConn,
+    query: &str,
+    include_hidden: bool,
+) -> IntResult<Vec<Category>> {
     use super::schema::categories::dsl;
     if include_hidden {
         dsl::categories
@@ -103,9 +107,9 @@ pub fn search(con: &DbConn, payload: SearchPayload) -> IntResult<SearchResults> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::db::{categories, comments, establish_connection, threads, users};
+    use crate::types::{InsertCategory, InsertComment, InsertThread, InsertUser};
     use std::convert::TryInto;
-    use crate::db::{categories, establish_connection, threads, users, comments};
-    use crate::types::{InsertCategory, InsertThread, InsertUser, InsertComment};
 
     #[test]
     fn search() {
@@ -116,7 +120,10 @@ mod tests {
         assert!(users::delete_all_users(&con).is_ok());
         add_data(&con);
 
-        let payload = SearchPayload {query: "aaa".to_string().try_into().unwrap(), include_hidden: true};
+        let payload = SearchPayload {
+            query: "aaa".to_string().try_into().unwrap(),
+            include_hidden: true,
+        };
         println!("{:#?}", payload);
 
         let res = super::search(&con, payload);

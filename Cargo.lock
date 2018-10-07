@@ -265,7 +265,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "datatypes"
 version = "0.1.0"
-source = "git+https://github.com/Bitspleaseee/datatypes.git#e536003d8922b05a33bfaaf1332c7cc22a96027b"
+source = "git+https://github.com/Bitspleaseee/datatypes.git#1adf98a15938e47d894a188582e02b9aca9dcb6d"
 dependencies = [
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
