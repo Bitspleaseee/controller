@@ -77,7 +77,6 @@ fn run() -> IntResult<()> {
     // Get database url and other environment variables
     let database_url = std::env::var("DATABASE_URL")
         .expect("DATABASE_URL must be set as an environment variable or in a '.env' file");
-
     {
         // Test db connection
         info!("Attempting to connect to database");
@@ -94,16 +93,21 @@ fn run() -> IntResult<()> {
             delete_all_comments(&conn)?;
         }
     }
+
     // Server
-    let server = Server::try_new(&database_url)?;
-    // TODO setup host addr based on environment variables
-    let addr = "localhost:10000"
-        .try_first_socket_addr()
-        .context(IntErrorKind::ServerError)?;
+    let address = match std::env::var("CONTROLLER_ADDRESS") {
+        Ok(value) => value,
+        Err(_) => {
+            warn!("CONTROLLER_ADDRESS is not set, using 'localhost:10000'");
+            "localhost:10000".to_string()
+        }
+    }.try_first_socket_addr()
+    .context(IntErrorKind::ServerError)?;
 
     info!("Attempting to start tarpc server");
-    // Runs the server by blocking this thread
-    server.run(addr)
+
+    let server = Server::try_new(&database_url)?;
+    server.run(address)
 }
 
 fn main() {
