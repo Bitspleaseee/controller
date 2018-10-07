@@ -137,3 +137,244 @@ pub fn update_comment(con: &DbConn, comment: impl Into<UpdateComment>) -> IntRes
             e.into()
         })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::NaiveDateTime;
+    use crate::db::{categories, establish_connection, threads, users};
+    use crate::types::{InsertCategory, InsertThread, InsertUser};
+
+    #[test]
+    fn insert_and_get() {
+        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+
+        // User
+        let insert_data = InsertUser {
+            id: 20,
+            username: "TestUser".to_string(),
+        };
+        let returned_data = users::insert_user(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let user = returned_data.unwrap();
+
+        // Category
+        let insert_data = InsertCategory {
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+        };
+        let returned_data = categories::insert_category(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let category = returned_data.unwrap();
+
+        // Thread
+        let insert_data = InsertThread {
+            category_id: category.id,
+            user_id: user.id,
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+        };
+        let returned_data = threads::insert_thread(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let thread = returned_data.unwrap();
+
+        // Comment
+        let insert_data = InsertComment {
+            thread_id: thread.id,
+            user_id: user.id,
+            parent_id: None,
+            content: "TestContent".to_string(),
+        };
+
+        let insert_data_pid = InsertComment {
+            thread_id: thread.id,
+            user_id: user.id,
+            parent_id: Some(0),
+            content: "TestContent".to_string(),
+        };
+
+        let insert_data_uid = InsertComment {
+            thread_id: thread.id,
+            user_id: 0,
+            parent_id: None,
+            content: "TestContent".to_string(),
+        };
+
+        let insert_data_tid = InsertComment {
+            thread_id: 0,
+            user_id: user.id,
+            parent_id: None,
+            content: "TestContent".to_string(),
+        };
+
+        let mut expected_data = Comment {
+            id: 1,
+            thread_id: thread.id,
+            parent_id: None,
+            user_id: user.id,
+            content: "TestContent".to_string(),
+            timestamp: NaiveDateTime::from_timestamp(0, 0),
+            hidden: false,
+        };
+
+        // Missing foreign keys
+        assert!(insert_comment(&con, insert_data_pid).is_err());
+        assert!(insert_comment(&con, insert_data_uid).is_err());
+        assert!(insert_comment(&con, insert_data_tid).is_err());
+
+        // Insert
+        let returned_data = insert_comment(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Compare
+        expected_data.id = returned_data.id;
+        expected_data.timestamp = returned_data.timestamp;
+        assert_eq!(returned_data, expected_data);
+
+        // Get
+        let returned_data = get_comment(&con, returned_data.id.into(), false);
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Compare
+        assert_eq!(returned_data, expected_data);
+    }
+
+    #[test]
+    fn update() {
+        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+
+        // User
+        let insert_data = InsertUser {
+            id: 21,
+            username: "TestUser".to_string(),
+        };
+        let returned_data = users::insert_user(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let user = returned_data.unwrap();
+
+        // Category
+        let insert_data = InsertCategory {
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+        };
+        let returned_data = categories::insert_category(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let category = returned_data.unwrap();
+
+        // Thread
+        let insert_data = InsertThread {
+            category_id: category.id,
+            user_id: user.id,
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+        };
+        let returned_data = threads::insert_thread(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let thread = returned_data.unwrap();
+
+        // Comment
+        let insert_data = InsertComment {
+            thread_id: thread.id,
+            user_id: user.id,
+            parent_id: None,
+            content: "TestContent".to_string(),
+        };
+
+        let mut update_data = UpdateComment {
+            id: 1,
+            content: Some("OtherContent".to_string()),
+            hidden: Some(true),
+        };
+
+        let mut expected_data = Comment {
+            id: 1,
+            thread_id: thread.id,
+            parent_id: None,
+            user_id: user.id,
+            content: "OtherContent".to_string(),
+            timestamp: NaiveDateTime::from_timestamp(0, 0),
+            hidden: true,
+        };
+
+        // Insert
+        let returned_data = insert_comment(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Update
+        update_data.id = returned_data.id;
+        let returned_data = update_comment(&con, update_data);
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Compare
+        expected_data.id = returned_data.id;
+        expected_data.timestamp = returned_data.timestamp;
+        assert_eq!(returned_data, expected_data);
+    }
+
+    #[test]
+    fn hide() {
+        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+
+        // User
+        let insert_data = InsertUser {
+            id: 32,
+            username: "TestUser".to_string(),
+        };
+        let returned_data = users::insert_user(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let user = returned_data.unwrap();
+
+        // Category
+        let insert_data = InsertCategory {
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+        };
+        let returned_data = categories::insert_category(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let category = returned_data.unwrap();
+
+        // Thread
+        let insert_data = InsertThread {
+            category_id: category.id,
+            user_id: user.id,
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+        };
+        let returned_data = threads::insert_thread(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let thread = returned_data.unwrap();
+
+        // Comment
+        let insert_data = InsertComment {
+            thread_id: thread.id,
+            user_id: user.id,
+            parent_id: None,
+            content: "TestContent".to_string(),
+        };
+
+        let mut update_data = UpdateComment {
+            id: 1,
+            content: None,
+            hidden: Some(true),
+        };
+
+        // insert
+        let returned_data = insert_comment(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Get
+        assert!(get_comment(&con, returned_data.id.into(), false).is_ok());
+
+        // Delete
+        update_data.id = returned_data.id;
+        assert!(update_comment(&con, update_data).is_ok());
+
+        // Fail to get
+        assert!(get_comment(&con, returned_data.id.into(), false).is_err());
+    }
+}

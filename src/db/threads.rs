@@ -238,6 +238,20 @@ mod tests {
             description: "TestDescription".to_string(),
         };
 
+        let insert_data_uid = InsertThread {
+            category_id: category.id,
+            user_id: 0,
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+        };
+
+        let insert_data_cid = InsertThread {
+            category_id: 0,
+            user_id: user.id,
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+        };
+
         let mut update_data = UpdateThread {
             id: 1,
             title: Some("OtherTitle".to_string()),
@@ -254,6 +268,10 @@ mod tests {
             timestamp: NaiveDateTime::from_timestamp(0, 0),
             hidden: true,
         };
+
+        // Missing foreign keys
+        assert!(insert_thread(&con, insert_data_uid).is_err());
+        assert!(insert_thread(&con, insert_data_cid).is_err());
 
         // Insert
         let returned_data = insert_thread(&con, insert_data);

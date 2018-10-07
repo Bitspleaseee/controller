@@ -40,14 +40,15 @@ pub fn setup_connection_pool(database_url: &str) -> IntResult<DbPool> {
 }
 
 #[cfg(test)]
-mod a_tests {
+mod _tests {
     use super::*;
 
     #[test]
     fn clear() {
         let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
-        threads::delete_all_threads(&con).unwrap();
-        categories::delete_all_categories(&con).unwrap();
-        users::delete_all_users(&con).unwrap();
+        assert!(comments::delete_all_comments(&con).is_ok());
+        assert!(threads::delete_all_threads(&con).is_ok());
+        assert!(categories::delete_all_categories(&con).is_ok());
+        assert!(users::delete_all_users(&con).is_ok());
     }
 }
