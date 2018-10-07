@@ -289,3 +289,11 @@ impl From<AddCommentPayload> for InsertComment {
         }
     }
 }
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct SearchResults {
+    pub categories: Vec<Category>,
+    pub threads: Vec<Thread>,
+    pub comments: Vec<Comment>,
+    pub users: Vec<User>,
+}
