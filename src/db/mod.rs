@@ -9,9 +9,9 @@ use crate::{IntErrorKind, IntResult};
 pub mod categories;
 pub mod comments;
 pub mod schema;
+pub mod search;
 pub mod threads;
 pub mod users;
-pub mod search;
 
 pub type DbConn = MysqlConnection;
 pub type DbPool = diesel::r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::MysqlConnection>>;
