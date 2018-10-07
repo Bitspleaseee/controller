@@ -11,7 +11,7 @@ jobs:
     - cargo build --verbose
   - stage: tests
     script:
-    - cargo test --verbose
+    - cargo test --verbose -- --test-threads 1
   - stage: tests
     script:
     - rustup component add rustfmt-preview

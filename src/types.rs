@@ -7,7 +7,7 @@ use datatypes::valid::ValidationError;
 use chrono::naive::NaiveDateTime;
 use std::convert::TryInto;
 
-#[derive(Identifiable, Queryable, Debug, Serialize, Deserialize)]
+#[derive(Identifiable, Queryable, Debug, Serialize, Deserialize, PartialEq)]
 pub struct User {
     pub id: u32,
     pub username: String,

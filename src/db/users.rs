@@ -8,8 +8,6 @@ use crate::{IntErrorKind, IntResult};
 use datatypes::valid::ids::*;
 
 /// Inserts new user into the user table
-///
-/// TODO change this implementation to make the user-id auto increment
 pub fn insert_user(con: &DbConn, user: impl Into<InsertUser>) -> IntResult<User> {
     use super::schema::users::dsl;
     let user = user.into();
@@ -106,4 +104,101 @@ pub fn update_user(con: &DbConn, user: impl Into<UpdateUser>) -> IntResult<User>
             error!("Unable to update user ({}): {}", id, e);
             e.into()
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::establish_connection;
+
+    #[test]
+    fn insert_and_get() {
+        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        assert!(delete_all_users(&con).is_ok());
+
+        let insert_data = InsertUser {
+            id: 1,
+            username: "TestUser".to_string(),
+        };
+
+        let expected_data = User {
+            id: 1,
+            username: "TestUser".to_string(),
+            description: None,
+            avatar: None,
+        };
+
+        // Insert
+        let returned_data = insert_user(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Compare
+        assert_eq!(returned_data, expected_data);
+
+        // Get
+        let returned_data = get_user(&con, 1.into());
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Compare
+        assert_eq!(returned_data, expected_data);
+    }
+
+    #[test]
+    fn update() {
+        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        assert!(delete_all_users(&con).is_ok());
+
+        let insert_data = InsertUser {
+            id: 1,
+            username: "TestUser".to_string(),
+        };
+
+        let update_data = UpdateUser {
+            id: 1,
+            description: Some("TestDescription".to_string()),
+            avatar: Some("TestAvatar".to_string()),
+        };
+
+        let expected_data = User {
+            id: 1,
+            username: "TestUser".to_string(),
+            description: Some("TestDescription".to_string()),
+            avatar: Some("TestAvatar".to_string()),
+        };
+
+        // Insert
+        assert!(insert_user(&con, insert_data).is_ok());
+
+        // Update
+        let returned_data = update_user(&con, update_data);
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Compare
+        assert_eq!(returned_data, expected_data);
+    }
+
+    #[test]
+    fn delete() {
+        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        assert!(delete_all_users(&con).is_ok());
+
+        // insert
+        let insert_data = InsertUser {
+            id: 1,
+            username: "TestUser".to_string(),
+        };
+        assert!(insert_user(&con, insert_data).is_ok());
+
+        // Get
+        assert!(get_user(&con, 1.into()).is_ok());
+
+        // Delete
+        assert!(delete_user(&con, 1.into()).is_ok());
+
+        // Fail to get
+        assert!(get_user(&con, 1.into()).is_err());
+    }
 }
