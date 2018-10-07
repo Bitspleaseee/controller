@@ -141,3 +141,187 @@ pub fn update_thread(con: &DbConn, thread: impl Into<UpdateThread>) -> IntResult
             e.into()
         })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::NaiveDateTime;
+    use crate::db::{categories, establish_connection, users};
+    use crate::types::{InsertCategory, InsertUser};
+
+    #[test]
+    fn insert_and_get() {
+        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+
+        // User
+        let insert_data = InsertUser {
+            id: 10,
+            username: "TestUser".to_string(),
+        };
+        let returned_data = users::insert_user(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let user = returned_data.unwrap();
+
+        // Category
+        let insert_data = InsertCategory {
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+        };
+        let returned_data = categories::insert_category(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let category = returned_data.unwrap();
+
+        // Thread
+        let insert_data = InsertThread {
+            category_id: category.id,
+            user_id: user.id,
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+        };
+
+        let mut expected_data = Thread {
+            id: 1,
+            category_id: category.id,
+            user_id: user.id,
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+            timestamp: NaiveDateTime::from_timestamp(0, 0),
+            hidden: false,
+        };
+
+        // Insert
+        let returned_data = insert_thread(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Compare
+        expected_data.id = returned_data.id;
+        expected_data.timestamp = returned_data.timestamp;
+        assert_eq!(returned_data, expected_data);
+
+        // Get
+        let returned_data = get_thread(&con, returned_data.id.into(), false);
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Compare
+        assert_eq!(returned_data, expected_data);
+    }
+
+    #[test]
+    fn update() {
+        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+
+        // User
+        let insert_data = InsertUser {
+            id: 11,
+            username: "TestUser".to_string(),
+        };
+        let returned_data = users::insert_user(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let user = returned_data.unwrap();
+
+        // Category
+        let insert_data = InsertCategory {
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+        };
+        let returned_data = categories::insert_category(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let category = returned_data.unwrap();
+
+        // Thread
+        let insert_data = InsertThread {
+            category_id: category.id,
+            user_id: user.id,
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+        };
+
+        let mut update_data = UpdateThread {
+            id: 1,
+            title: Some("OtherTitle".to_string()),
+            description: Some("OtherDescription".to_string()),
+            hidden: Some(true),
+        };
+
+        let mut expected_data = Thread {
+            id: 1,
+            category_id: category.id,
+            user_id: user.id,
+            title: "OtherTitle".to_string(),
+            description: "OtherDescription".to_string(),
+            timestamp: NaiveDateTime::from_timestamp(0, 0),
+            hidden: true,
+        };
+
+        // Insert
+        let returned_data = insert_thread(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Update
+        update_data.id = returned_data.id;
+        let returned_data = update_thread(&con, update_data);
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Compare
+        expected_data.id = returned_data.id;
+        expected_data.timestamp = returned_data.timestamp;
+        assert_eq!(returned_data, expected_data);
+    }
+
+    #[test]
+    fn hide() {
+        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+
+        // User
+        let insert_data = InsertUser {
+            id: 12,
+            username: "TestUser".to_string(),
+        };
+        let returned_data = users::insert_user(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let user = returned_data.unwrap();
+
+        // Category
+        let insert_data = InsertCategory {
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+        };
+        let returned_data = categories::insert_category(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let category = returned_data.unwrap();
+
+        // Thread
+        let insert_data = InsertThread {
+            category_id: category.id,
+            user_id: user.id,
+            title: "TestTitle".to_string(),
+            description: "TestDescription".to_string(),
+        };
+
+        let mut update_data = UpdateThread {
+            id: 1,
+            title: None,
+            description: None,
+            hidden: Some(true),
+        };
+
+        // insert
+        let returned_data = insert_thread(&con, insert_data);
+        assert!(returned_data.is_ok());
+        let returned_data = returned_data.unwrap();
+
+        // Get
+        assert!(get_thread(&con, returned_data.id.into(), false).is_ok());
+
+        // Delete
+        update_data.id = returned_data.id;
+        assert!(update_thread(&con, update_data).is_ok());
+
+        // Fail to get
+        assert!(get_thread(&con, returned_data.id.into(), false).is_err());
+    }
+}

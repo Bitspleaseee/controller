@@ -120,7 +120,6 @@ mod tests {
     #[test]
     fn insert_and_get() {
         let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
-        assert!(delete_all_categories(&con).is_ok());
 
         let insert_data = InsertCategory {
             title: "TestTitle".to_string(),
@@ -155,7 +154,6 @@ mod tests {
     #[test]
     fn update() {
         let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
-        assert!(delete_all_categories(&con).is_ok());
 
         let insert_data = InsertCategory {
             title: "TestTitle".to_string(),
@@ -195,7 +193,6 @@ mod tests {
     #[test]
     fn hide() {
         let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
-        assert!(delete_all_categories(&con).is_ok());
 
         let insert_data = InsertCategory {
             title: "TestTitle".to_string(),

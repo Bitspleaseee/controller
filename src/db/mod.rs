@@ -38,3 +38,16 @@ pub fn setup_connection_pool(database_url: &str) -> IntResult<DbPool> {
         .context(IntErrorKind::ConnectionError)
         .map_err(|e| e.into())
 }
+
+#[cfg(test)]
+mod a_tests {
+    use super::*;
+
+    #[test]
+    fn clear() {
+        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        threads::delete_all_threads(&con).unwrap();
+        categories::delete_all_categories(&con).unwrap();
+        users::delete_all_users(&con).unwrap();
+    }
+}
