@@ -15,6 +15,10 @@ pub mod users;
 pub type DbConn = MysqlConnection;
 pub type DbPool = diesel::r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::MysqlConnection>>;
 
+const MAX_THREAD_LIMIT: i64 = 30;
+const MAX_CATEGORY_LIMIT: i64 = 30;
+const MAX_COMMENT_LIMIT: i64 = 30;
+
 /// Establishes a connection to the database
 pub fn establish_connection(database_url: &str) -> IntResult<DbConn> {
     MysqlConnection::establish(database_url)

@@ -15,7 +15,6 @@ service! {
     rpc get_user(payload: GetUserPayload) -> UserPayload | ContentError;
     rpc add_user(payload: AddUserPayload) -> UserPayload | ContentError;
     rpc edit_user(payload: EditUserPayload) -> UserPayload | ContentError;
-    rpc upload_avatar(payload: UploadAvatarPayload) -> UserPayload | ContentError;
 
     rpc get_category(payload: GetCategoryPayload) -> CategoryPayload | ContentError;
     rpc get_all_categories(payload: GetHiddenPayload) -> Vec<CategoryPayload> | ContentError;
@@ -85,13 +84,6 @@ impl FutureService for Server {
     impl_service!(users, get_user, GetUserPayload, GetUserFut, UserRes);
     impl_service!(users, add_user, AddUserPayload, AddUserFut, UserRes);
     impl_service!(users, edit_user, EditUserPayload, EditUserFut, UserRes);
-    impl_service!(
-        users,
-        upload_avatar,
-        UploadAvatarPayload,
-        UploadAvatarFut,
-        UserRes
-    );
 
     // Categories
     impl_service!(

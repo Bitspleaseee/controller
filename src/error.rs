@@ -9,9 +9,9 @@ use datatypes::content::responses::ContentError;
 pub enum ErrorKind {
     #[fail(display = "unable to connect to database")]
     ConnectionError,
-    #[fail(display = "a database query failed to be executed")]
+    #[fail(display = "a query failed to be executed")]
     QueryError,
-    #[fail(display = "a database query did not find any content")]
+    #[fail(display = "a query did not find any content")]
     ContentNotFound,
     #[fail(display = "failed to start tarpc server")]
     ServerError,

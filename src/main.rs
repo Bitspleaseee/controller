@@ -26,6 +26,8 @@ extern crate futures_cpupool;
 extern crate tarpc;
 extern crate tokio_core;
 
+#[macro_use]
+pub mod macros;
 pub mod db;
 pub mod error;
 pub mod logging;
@@ -90,7 +92,7 @@ fn run() -> IntResult<()> {
 
 fn main() {
     if let Err(e) = run() {
-        error!("{:?}", e);
+        error!("{}", e);
         std::process::exit(1)
     } else {
         std::process::exit(0)

@@ -9,11 +9,16 @@ use crate::types::Thread;
 use crate::{IntErrorKind, IntResult};
 
 pub fn get_thread(con: &DbConn, payload: GetThreadPayload) -> IntResult<ThreadPayload> {
-    trace!("get_thread {:?}", payload);
-    db::threads::get_thread(&con, &payload.id, payload.include_hidden).and_then(|p| {
+    let GetThreadPayload { id, include_hidden } = payload;
+    trace!("get_thread: {:?}", payload);
+
+    db::threads::get_thread(&con, id, include_hidden).and_then(|p| {
         <Thread as TryInto<ThreadPayload>>::try_into(p)
             .context(IntErrorKind::ServerError)
-            .map_err(|e| e.into())
+            .map_err(|e| {
+                error!("Unable to convert thread ({}) to payload: {}", id, e);
+                e.into()
+            })
     })
 }
 
@@ -21,52 +26,78 @@ pub fn get_threads_in_category(
     con: &DbConn,
     payload: GetThreadsPayload,
 ) -> IntResult<Vec<ThreadPayload>> {
-    trace!("get_threads_in_category {:?}", payload);
+    let GetThreadsPayload { id, include_hidden } = payload;
+    trace!("get_threads_in_category: {:?}", payload);
 
-    db::threads::get_threads_in_category(&con, &payload.id, payload.include_hidden).and_then(
-        |threads| {
-            threads
-                .into_iter()
-                .map(|thread| thread.try_into())
-                .collect::<Result<Vec<ThreadPayload>, _>>()
-                .context(IntErrorKind::ServerError)
-                .map_err(|e| e.into())
-        },
-    )
-}
-
-pub fn get_all_threads(con: &DbConn, payload: GetHiddenPayload) -> IntResult<Vec<ThreadPayload>> {
-    trace!("get_all_threads {:?}", payload);
-
-    db::threads::get_all_threads(&con, payload.include_hidden).and_then(|threads| {
+    db::threads::get_threads_in_category(&con, id, include_hidden).and_then(|threads| {
         threads
             .into_iter()
             .map(|thread| thread.try_into())
             .collect::<Result<Vec<ThreadPayload>, _>>()
             .context(IntErrorKind::ServerError)
-            .map_err(|e| e.into())
+            .map_err(|e| {
+                error!("Unable to convert thread into payload: {}", e);
+                e.into()
+            })
+    })
+}
+
+pub fn get_all_threads(con: &DbConn, payload: GetHiddenPayload) -> IntResult<Vec<ThreadPayload>> {
+    let GetHiddenPayload { include_hidden } = payload;
+    trace!("get_all_threads: {:?}", payload);
+
+    db::threads::get_all_threads(&con, include_hidden).and_then(|threads| {
+        threads
+            .into_iter()
+            .map(|thread| thread.try_into())
+            .collect::<Result<Vec<ThreadPayload>, _>>()
+            .context(IntErrorKind::ServerError)
+            .map_err(|e| {
+                error!("Unable to convert thread to payload: {}", e);
+                e.into()
+            })
     })
 }
 
 pub fn add_thread(con: &DbConn, payload: AddThreadPayload) -> IntResult<ThreadPayload> {
-    trace!("add_thread {:?}", payload);
-    db::threads::insert_thread(&con, &payload.title, &payload.description).and_then(|p| {
+    trace!("add_thread: {:?}", payload);
+
+    db::threads::insert_thread(&con, payload).and_then(|p| {
         <Thread as TryInto<ThreadPayload>>::try_into(p)
             .context(IntErrorKind::ServerError)
-            .map_err(|e| e.into())
+            .map_err(|e| {
+                error!("Unable to convert thread to payload: {}", e);
+                e.into()
+            })
     })
 }
 
 pub fn edit_thread(con: &DbConn, payload: EditThreadPayload) -> IntResult<ThreadPayload> {
-    trace!("edit_thread {:?}", payload);
-    Err(IntErrorKind::ServerError)?
+    let EditThreadPayload { id, .. } = payload;
+
+    trace!("edit_thread: {:?}", payload);
+
+    db::threads::update_thread(&con, payload).and_then(|p| {
+        <Thread as TryInto<ThreadPayload>>::try_into(p)
+            .context(IntErrorKind::ServerError)
+            .map_err(|e| {
+                error!("Unable to convert thread ({}) to payload: {}", id, e);
+                e.into()
+            })
+    })
 }
 
 pub fn hide_thread(con: &DbConn, payload: HideThreadPayload) -> IntResult<ThreadPayload> {
-    trace!("hide_thread {:?}", payload);
-    db::threads::update_thread_hidden(&con, &payload.id, payload.hide).and_then(|p| {
+    let HideThreadPayload { id, .. } = payload;
+
+    trace!("hide_thread: {:?}", payload);
+
+    db::threads::update_thread(&con, payload).and_then(|p| {
         <Thread as TryInto<ThreadPayload>>::try_into(p)
             .context(IntErrorKind::ServerError)
-            .map_err(|e| e.into())
+            .map_err(|e| {
+                error!("Unable to convert thread ({}) to payload: {}", id, e);
+                e.into()
+            })
     })
 }
