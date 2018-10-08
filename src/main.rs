@@ -75,8 +75,8 @@ fn run() -> IntResult<()> {
     logging::setup_logging(verbosity).expect("failed to initialize logging");
 
     // Get database url and other environment variables
-    let database_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set as an environment variable or in a '.env' file");
+    let database_url = std::env::var("CONTROLLER_DATABASE_URL")
+        .expect("CONTROLLER_DATABASE_URL must be set as an environment variable or in a '.env' file");
     {
         // Test db connection
         info!("Attempting to connect to database");
