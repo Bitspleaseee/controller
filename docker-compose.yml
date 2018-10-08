@@ -4,7 +4,7 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_URL: "mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}"
+      CONTROLLER_DATABASE_URL: "mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}"
     build: .
   db:
     image: mariadb:10.3

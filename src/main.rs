@@ -35,8 +35,7 @@ pub mod server;
 pub mod types;
 
 use dotenv::dotenv;
-use failure::ResultExt;
-use tarpc::util::FirstSocketAddr;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use self::db::categories::delete_all_categories;
 use self::db::comments::delete_all_comments;
@@ -75,8 +74,9 @@ fn run() -> IntResult<()> {
     logging::setup_logging(verbosity).expect("failed to initialize logging");
 
     // Get database url and other environment variables
-    let database_url = std::env::var("CONTROLLER_DATABASE_URL")
-        .expect("CONTROLLER_DATABASE_URL must be set as an environment variable or in a '.env' file");
+    let database_url = std::env::var("CONTROLLER_DATABASE_URL").expect(
+        "CONTROLLER_DATABASE_URL must be set as an environment variable or in a '.env' file",
+    );
     {
         // Test db connection
         info!("Attempting to connect to database");
@@ -96,13 +96,12 @@ fn run() -> IntResult<()> {
 
     // Server
     let address = match std::env::var("CONTROLLER_ADDRESS") {
-        Ok(value) => value,
+        Ok(value) => value.parse().expect("Invalid formatted CONTROLLER_ADDRESS"),
         Err(_) => {
-            warn!("CONTROLLER_ADDRESS is not set, using 'localhost:10000'");
-            "localhost:10000".to_string()
+            warn!("CONTROLLER_ADDRESS is not set, using '127.0.0.1:10000'");
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 10000)
         }
-    }.try_first_socket_addr()
-    .context(IntErrorKind::ServerError)?;
+    };
 
     info!("Attempting to start tarpc server");
 
