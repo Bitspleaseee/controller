@@ -87,10 +87,10 @@ fn run() -> IntResult<()> {
 
         if clear > 0 {
             info!("Clearing database");
-            delete_all_users(&conn)?;
-            delete_all_categories(&conn)?;
-            delete_all_threads(&conn)?;
             delete_all_comments(&conn)?;
+            delete_all_threads(&conn)?;
+            delete_all_categories(&conn)?;
+            delete_all_users(&conn)?;
         }
     }
 

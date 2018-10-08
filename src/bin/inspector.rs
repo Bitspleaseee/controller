@@ -60,6 +60,7 @@ enum_str! {
     #[derive(Copy, Clone)]
     pub enum Cmd {
         Get => "get",
+        GetIn => "get-in",
         GetAll => "get-all",
         Insert => "insert",
         Hide => "hide",
@@ -74,7 +75,9 @@ enum_str! {
         Main => "main",
         Users => "users",
         Categories => "categories",
-        Threads => "threads"
+        Threads => "threads",
+        Comments => "comments",
+        Search => "search"
     }
 }
 
@@ -88,11 +91,29 @@ fn cmd_handler<'a>(state: &State, s: &'a str) -> Fallible<()> {
         (Mode::Users, Cmd::Get) => run_get_user(args),
         (Mode::Users, Cmd::Insert) => run_insert_user(args),
         (Mode::Users, Cmd::Edit) => run_edit_user(args),
+        
         (Mode::Categories, Cmd::Get) => run_get_category(args),
         (Mode::Categories, Cmd::GetAll) => run_get_all_categories(args),
         (Mode::Categories, Cmd::Insert) => run_insert_category(args),
         (Mode::Categories, Cmd::Edit) => run_edit_category(args),
         (Mode::Categories, Cmd::Hide) => run_hide_category(args),
+
+        (Mode::Threads, Cmd::Get) => run_get_thread(args),
+        (Mode::Threads, Cmd::GetIn) => run_get_threads_in_category(args),
+        (Mode::Threads, Cmd::GetAll) => run_get_all_threads(args),
+        (Mode::Threads, Cmd::Insert) => run_insert_thread(args),
+        (Mode::Threads, Cmd::Edit) => run_edit_thread(args),
+        (Mode::Threads, Cmd::Hide) => run_hide_thread(args),
+
+        (Mode::Comments, Cmd::Get) => run_get_comment(args),
+        (Mode::Comments, Cmd::GetIn) => run_get_comments_in_thread(args),
+        (Mode::Comments, Cmd::GetAll) => run_get_all_comments(args),
+        (Mode::Comments, Cmd::Insert) => run_insert_comment(args),
+        (Mode::Comments, Cmd::Edit) => run_edit_comment(args),
+        (Mode::Comments, Cmd::Hide) => run_hide_comment(args),
+
+        (Mode::Search, Cmd::Get) => run_search(args),
+
         (m, c) => Err(format_err!(
             "Unimplemented command '{}' for mode '{}'",
             c,
@@ -215,6 +236,160 @@ fn run_hide_category<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()
     let payload = HideCategoryPayload { id, hide: true };
 
     run_client_action(|client| client.hide_category(payload));
+    Ok(())
+}
+
+// Thread
+
+fn run_get_thread<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
+    let id = get_next_id!(args, u32 => id)?;
+
+    let payload = GetThreadPayload {
+        id,
+        include_hidden: true,
+    };
+
+    run_client_action(|client| client.get_thread(payload));
+    Ok(())
+}
+
+fn run_get_threads_in_category<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
+    let id = get_next_id!(args, u32 => category_id)?;
+
+    let payload = GetThreadsPayload {
+        id,
+        include_hidden: true,
+    };
+
+    run_client_action(|client| client.get_threads_in_category(payload));
+    Ok(())
+}
+
+fn run_get_all_threads<'a>(mut _args: impl Iterator<Item = &'a str>) -> Fallible<()> {
+    let payload = GetHiddenPayload {
+        include_hidden: true,
+    };
+
+    run_client_action(|client| client.get_all_threads(payload));
+    Ok(())
+}
+
+fn run_insert_thread<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
+    let category_id = get_next_id!(args, u32 => category_id)?;
+    let user_id = get_next_id!(args, u32 => user_id)?;
+    let title = get_next_field!(args, title)?;
+    let description = get_next_field!(args, description)?;
+
+    let payload = AddThreadPayload { category_id, user_id, title, description };
+
+    run_client_action(|client| client.add_thread(payload));
+    Ok(())
+}
+
+fn run_edit_thread<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
+    let id = get_next_id!(args, u32 => id)?;
+    let title = get_next_field!(args, title).ok();
+    let description = get_next_field!(args, description).ok();
+
+    let payload = EditThreadPayload {
+        id,
+        title,
+        description,
+    };
+
+    run_client_action(|client| client.edit_thread(payload));
+    Ok(())
+}
+
+fn run_hide_thread<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
+    let id = get_next_id!(args, u32 => id)?;
+
+    let payload = HideThreadPayload { id, hide: true };
+
+    run_client_action(|client| client.hide_thread(payload));
+    Ok(())
+}
+
+// Comments
+
+fn run_get_comment<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
+    let id = get_next_id!(args, u32 => id)?;
+
+    let payload = GetCommentPayload {
+        id,
+        include_hidden: true,
+    };
+
+    run_client_action(|client| client.get_comment(payload));
+    Ok(())
+}
+
+fn run_get_all_comments<'a>(mut _args: impl Iterator<Item = &'a str>) -> Fallible<()> {
+    let payload = GetHiddenPayload {
+        include_hidden: true,
+    };
+
+    run_client_action(|client| client.get_all_comments(payload));
+    Ok(())
+}
+
+fn run_get_comments_in_thread<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
+    let id = get_next_id!(args, u32 => thread_id)?;
+
+    let payload = GetCommentsPayload {
+        id,
+        include_hidden: true,
+    };
+
+    run_client_action(|client| client.get_comments_in_thread(payload));
+    Ok(())
+}
+
+fn run_insert_comment<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
+    let thread_id = get_next_id!(args, u32 => thread_id)?;
+    let user_id = get_next_id!(args, u32 => user_id)?;
+    let parent_id = get_next_id!(args, u32 => parent_id).ok();
+    let content = get_next_field!(args, content)?;
+
+    let payload = AddCommentPayload { thread_id, user_id, parent_id, content};
+
+    run_client_action(|client| client.add_comment(payload));
+    Ok(())
+}
+
+fn run_edit_comment<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
+    let id = get_next_id!(args, u32 => id)?;
+    let content = get_next_field!(args, content)?;
+
+    let payload = EditCommentPayload {
+        id,
+        content,
+    };
+
+    run_client_action(|client| client.edit_comment(payload));
+    Ok(())
+}
+
+fn run_hide_comment<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
+    let id = get_next_id!(args, u32 => id)?;
+
+    let payload = HideCommentPayload { id, hide: true };
+
+    run_client_action(|client| client.hide_comment(payload));
+    Ok(())
+}
+
+// Search
+
+fn run_search<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
+    let query = get_next_field!(args, query)?;
+
+    let payload = SearchPayload {
+        query,
+        include_hidden: true,
+    };
+
+    run_client_action(|client| client.search(payload));
     Ok(())
 }
 
