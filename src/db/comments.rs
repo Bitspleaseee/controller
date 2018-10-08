@@ -90,12 +90,12 @@ pub fn get_comments_in_thread(
     if include_hidden {
         dsl::comments
             .limit(MAX_COMMENT_LIMIT)
-            .filter(dsl::id.eq(*id))
+            .filter(dsl::thread_id.eq(*id))
             .get_results(con)
     } else {
         dsl::comments
             .limit(MAX_COMMENT_LIMIT)
-            .filter(dsl::id.eq(*id))
+            .filter(dsl::thread_id.eq(*id))
             .filter(dsl::hidden.eq(false))
             .get_results(con)
     }.context(IntErrorKind::QueryError)
