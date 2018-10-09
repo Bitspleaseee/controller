@@ -80,17 +80,21 @@ fn run() -> IntResult<()> {
     {
         // Test db connection
         info!("Attempting to connect to database");
-        let conn = establish_connection(&database_url)?;
+        match establish_connection(&database_url) {
+            Err(e) => warn!("Failed to connect to db! {}", e),
+            Ok(conn) => {
 
-        // Clear db
-        let clear: u64 = cmd_arguments.occurrences_of("clear");
+                // Clear db
+                let clear: u64 = cmd_arguments.occurrences_of("clear");
 
-        if clear > 0 {
-            info!("Clearing database");
-            delete_all_comments(&conn)?;
-            delete_all_threads(&conn)?;
-            delete_all_categories(&conn)?;
-            delete_all_users(&conn)?;
+                if clear > 0 {
+                    info!("Clearing database");
+                    delete_all_comments(&conn)?;
+                    delete_all_threads(&conn)?;
+                    delete_all_categories(&conn)?;
+                    delete_all_users(&conn)?;
+                }
+            }
         }
     }
 
