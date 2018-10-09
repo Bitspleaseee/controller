@@ -33,6 +33,7 @@ pub mod error;
 pub mod logging;
 pub mod server;
 pub mod types;
+pub mod migration;
 
 use dotenv::dotenv;
 use std::net::{SocketAddr, ToSocketAddrs};
@@ -67,6 +68,12 @@ fn run() -> IntResult<()> {
                 .long("clear")
                 .multiple(true)
                 .help("Clears the database on startup"),
+        ).arg(
+            clap::Arg::with_name("migrate")
+                .short("m")
+                .long("migrate")
+                .multiple(true)
+                .help("Runs db migration"),
         ).get_matches();
 
     // Logging
@@ -77,25 +84,6 @@ fn run() -> IntResult<()> {
     let database_url = std::env::var("CONTROLLER_DATABASE_URL").expect(
         "CONTROLLER_DATABASE_URL must be set as an environment variable or in a '.env' file",
     );
-    {
-        // Test db connection
-        info!("Attempting to connect to database");
-        match establish_connection(&database_url) {
-            Err(e) => warn!("Failed to connect to db! {}", e),
-            Ok(conn) => {
-                // Clear db
-                let clear: u64 = cmd_arguments.occurrences_of("clear");
-
-                if clear > 0 {
-                    info!("Clearing database");
-                    delete_all_comments(&conn)?;
-                    delete_all_threads(&conn)?;
-                    delete_all_categories(&conn)?;
-                    delete_all_users(&conn)?;
-                }
-            }
-        }
-    }
 
     // Server
     let address = match std::env::var("CONTROLLER_ADDRESS") {
@@ -110,9 +98,33 @@ fn run() -> IntResult<()> {
         }
     };
 
-    info!("Attempting to start tarpc server");
-
+    info!("Setting up server");
     let server = Server::try_new(&database_url)?;
+
+    //Migrate
+    let migrate: u64 = cmd_arguments.occurrences_of("migrate");
+    if migrate > 0 {
+        info!("Running db migration");
+        migration::run(&database_url)?;
+    }
+
+    // Clear db
+    let clear: u64 = cmd_arguments.occurrences_of("clear");
+    if clear > 0 {
+        info!("Clearing database");
+
+        match establish_connection(&database_url) {
+            Err(e) => warn!("Failed to connect to db! {}", e),
+            Ok(conn) => {
+                delete_all_comments(&conn)?;
+                delete_all_threads(&conn)?;
+                delete_all_categories(&conn)?;
+                delete_all_users(&conn)?;
+            }
+        }
+    }
+
+    info!("Attempting to start server");
     server.run(address)
 }
 
