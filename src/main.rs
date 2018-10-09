@@ -35,7 +35,7 @@ pub mod server;
 pub mod types;
 
 use dotenv::dotenv;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{SocketAddr, ToSocketAddrs};
 
 use self::db::categories::delete_all_categories;
 use self::db::comments::delete_all_comments;
@@ -99,10 +99,14 @@ fn run() -> IntResult<()> {
 
     // Server
     let address = match std::env::var("CONTROLLER_ADDRESS") {
-        Ok(value) => value.parse().expect("Invalid formatted CONTROLLER_ADDRESS"),
+        Ok(value) => value
+            .to_socket_addrs()
+            .expect("Unable to perform CONTROLLER_ADDRESS resolving")
+            .next()
+            .expect(&format!("Unable to resolve '{}'", value)),
         Err(_) => {
             warn!("CONTROLLER_ADDRESS is not set, using '127.0.0.1:10000'");
-            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 10000)
+            SocketAddr::from(([127, 0, 0, 1], 10000))
         }
     };
 
