@@ -83,7 +83,6 @@ fn run() -> IntResult<()> {
         match establish_connection(&database_url) {
             Err(e) => warn!("Failed to connect to db! {}", e),
             Ok(conn) => {
-
                 // Clear db
                 let clear: u64 = cmd_arguments.occurrences_of("clear");
 

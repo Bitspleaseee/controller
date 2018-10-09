@@ -91,7 +91,7 @@ fn cmd_handler<'a>(state: &State, s: &'a str) -> Fallible<()> {
         (Mode::Users, Cmd::Get) => run_get_user(args),
         (Mode::Users, Cmd::Insert) => run_insert_user(args),
         (Mode::Users, Cmd::Edit) => run_edit_user(args),
-        
+
         (Mode::Categories, Cmd::Get) => run_get_category(args),
         (Mode::Categories, Cmd::GetAll) => run_get_all_categories(args),
         (Mode::Categories, Cmd::Insert) => run_insert_category(args),
@@ -280,7 +280,12 @@ fn run_insert_thread<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()
     let title = get_next_field!(args, title)?;
     let description = get_next_field!(args, description)?;
 
-    let payload = AddThreadPayload { category_id, user_id, title, description };
+    let payload = AddThreadPayload {
+        category_id,
+        user_id,
+        title,
+        description,
+    };
 
     run_client_action(|client| client.add_thread(payload));
     Ok(())
@@ -351,7 +356,12 @@ fn run_insert_comment<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<(
     let parent_id = get_next_id!(args, u32 => parent_id).ok();
     let content = get_next_field!(args, content)?;
 
-    let payload = AddCommentPayload { thread_id, user_id, parent_id, content};
+    let payload = AddCommentPayload {
+        thread_id,
+        user_id,
+        parent_id,
+        content,
+    };
 
     run_client_action(|client| client.add_comment(payload));
     Ok(())
@@ -361,10 +371,7 @@ fn run_edit_comment<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()>
     let id = get_next_id!(args, u32 => id)?;
     let content = get_next_field!(args, content)?;
 
-    let payload = EditCommentPayload {
-        id,
-        content,
-    };
+    let payload = EditCommentPayload { id, content };
 
     run_client_action(|client| client.edit_comment(payload));
     Ok(())
