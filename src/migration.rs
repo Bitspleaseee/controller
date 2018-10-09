@@ -4,10 +4,11 @@ use diesel::sql_query;
 use crate::db::establish_connection;
 use crate::{IntErrorKind, IntResult};
 
-pub fn run (database_url: &str) -> IntResult<()> {
+pub fn run(database_url: &str) -> IntResult<()> {
     let con = establish_connection(database_url)?;
 
-    sql_query(r#"CREATE TABLE users (
+    sql_query(
+        r#"CREATE TABLE users (
 
   id INT UNSIGNED NOT NULL,
   username VARCHAR(20) NOT NULL,
@@ -15,9 +16,12 @@ pub fn run (database_url: &str) -> IntResult<()> {
   avatar VARCHAR(36) NULL,
 
   PRIMARY KEY (id)
-);"#).execute(&con).map_err(|_| IntErrorKind::QueryError)?;
+);"#,
+    ).execute(&con)
+    .map_err(|_| IntErrorKind::QueryError)?;
 
-    sql_query(r#"CREATE TABLE categories (
+    sql_query(
+        r#"CREATE TABLE categories (
 
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   title VARCHAR(45) NOT NULL,
@@ -25,9 +29,12 @@ pub fn run (database_url: &str) -> IntResult<()> {
   hidden BOOLEAN NOT NULL DEFAULT 0,
 
   PRIMARY KEY (id)
-);"#).execute(&con).map_err(|_| IntErrorKind::QueryError)?;
+);"#,
+    ).execute(&con)
+    .map_err(|_| IntErrorKind::QueryError)?;
 
-    sql_query(r#"CREATE TABLE threads (
+    sql_query(
+        r#"CREATE TABLE threads (
 
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   category_id INT UNSIGNED NOT NULL,
@@ -44,9 +51,12 @@ pub fn run (database_url: &str) -> IntResult<()> {
 
   FOREIGN KEY (user_id)
     REFERENCES users(id)
-);"#).execute(&con).map_err(|_| IntErrorKind::QueryError)?;
+);"#,
+    ).execute(&con)
+    .map_err(|_| IntErrorKind::QueryError)?;
 
-    sql_query(r#"CREATE TABLE comments (
+    sql_query(
+        r#"CREATE TABLE comments (
 
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   thread_id INT UNSIGNED NOT NULL,
@@ -66,7 +76,9 @@ pub fn run (database_url: &str) -> IntResult<()> {
 
   FOREIGN KEY (user_id)
     REFERENCES users(id)
-);"#).execute(&con).map_err(|_| IntErrorKind::QueryError)?;
+);"#,
+    ).execute(&con)
+    .map_err(|_| IntErrorKind::QueryError)?;
 
     Ok(())
 }

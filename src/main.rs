@@ -31,9 +31,9 @@ pub mod macros;
 pub mod db;
 pub mod error;
 pub mod logging;
+pub mod migration;
 pub mod server;
 pub mod types;
-pub mod migration;
 
 use dotenv::dotenv;
 use std::net::{SocketAddr, ToSocketAddrs};
@@ -105,7 +105,7 @@ fn run() -> IntResult<()> {
     let migrate: u64 = cmd_arguments.occurrences_of("migrate");
     if migrate > 0 {
         info!("Running db migration");
-        migration::run(&database_url)?;
+        let _ = migration::run(&database_url);
     }
 
     // Clear db
