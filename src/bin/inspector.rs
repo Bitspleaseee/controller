@@ -17,6 +17,7 @@ use rustyline::Editor;
 use std::convert::{TryFrom, TryInto};
 use std::default::Default;
 use std::fmt::Debug;
+use std::net::{SocketAddr, ToSocketAddrs};
 
 use tarpc::sync::client;
 use tarpc::sync::client::ClientExt;
@@ -430,10 +431,20 @@ service! {
 
 // Connect to server
 fn connect() -> Option<SyncClient> {
-    let options = client::Options::default();
-    let addr = "localhost:10000".first_socket_addr();
+    let address = match std::env::var("CONTROLLER_ADDRESS") {
+        Ok(value) => value
+            .to_socket_addrs()
+            .expect("Unable to perform CONTROLLER_ADDRESS resolving")
+            .next()
+            .expect(&format!("Unable to resolve '{}'", value)),
+        Err(_) => {
+            println!("CONTROLLER_ADDRESS is not set, using '127.0.0.1:10000'");
+            SocketAddr::from(([127, 0, 0, 1], 10000))
+        }
+    };
 
-    SyncClient::connect(addr, options).ok()
+    let options = client::Options::default();
+    SyncClient::connect(address, options).ok()
 }
 
 // Run a action on the server and print the result
