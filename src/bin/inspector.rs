@@ -21,7 +21,6 @@ use std::net::{SocketAddr, ToSocketAddrs};
 
 use tarpc::sync::client;
 use tarpc::sync::client::ClientExt;
-use tarpc::util::FirstSocketAddr;
 
 use datatypes::content::requests::*;
 use datatypes::content::responses::*;
@@ -149,6 +148,19 @@ macro_rules! get_next_id {
     };
 }
 
+macro_rules! get_next_opt_id {
+    ($args:ident, $inner:ty => $name:ident) => {
+        $args
+            .next()
+            .ok_or(format_err!("Missing argument <{}>", stringify!($name)))
+            .and_then(|s| {
+                s.parse::<$inner>()
+                    .map(|n| Some(n.into()))
+                    .map_err(|_| format_err!("Invalid <{}>", stringify!($name)))
+            })
+    };
+}
+
 // User
 
 fn run_get_user<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
@@ -169,7 +181,7 @@ fn run_insert_user<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> 
 }
 
 fn run_edit_user<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
-    let id = get_next_id!(args, u32 => user_id)?;
+    let id = get_next_opt_id!(args, u32 => user_id)?;
     let description = get_next_field!(args, description).ok();
     let avatar = get_next_field!(args, avatar).ok();
 
@@ -277,7 +289,7 @@ fn run_get_all_threads<'a>(mut _args: impl Iterator<Item = &'a str>) -> Fallible
 
 fn run_insert_thread<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
     let category_id = get_next_id!(args, u32 => category_id)?;
-    let user_id = get_next_id!(args, u32 => user_id)?;
+    let user_id = get_next_opt_id!(args, u32 => user_id)?;
     let title = get_next_field!(args, title)?;
     let description = get_next_field!(args, description)?;
 
@@ -294,11 +306,13 @@ fn run_insert_thread<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()
 
 fn run_edit_thread<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
     let id = get_next_id!(args, u32 => id)?;
+    let user_id = get_next_opt_id!(args, u32 => user_id)?;
     let title = get_next_field!(args, title).ok();
     let description = get_next_field!(args, description).ok();
 
     let payload = EditThreadPayload {
         id,
+        user_id,
         title,
         description,
     };
@@ -309,8 +323,13 @@ fn run_edit_thread<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> 
 
 fn run_hide_thread<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
     let id = get_next_id!(args, u32 => id)?;
+    let user_id = get_next_opt_id!(args, u32 => user_id)?;
 
-    let payload = HideThreadPayload { id, hide: true };
+    let payload = HideThreadPayload {
+        id,
+        user_id,
+        hide: true,
+    };
 
     run_client_action(|client| client.hide_thread(payload));
     Ok(())
@@ -353,7 +372,7 @@ fn run_get_comments_in_thread<'a>(mut args: impl Iterator<Item = &'a str>) -> Fa
 
 fn run_insert_comment<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
     let thread_id = get_next_id!(args, u32 => thread_id)?;
-    let user_id = get_next_id!(args, u32 => user_id)?;
+    let user_id = get_next_opt_id!(args, u32 => user_id)?;
     let parent_id = get_next_id!(args, u32 => parent_id).ok();
     let content = get_next_field!(args, content)?;
 
@@ -370,9 +389,14 @@ fn run_insert_comment<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<(
 
 fn run_edit_comment<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
     let id = get_next_id!(args, u32 => id)?;
+    let user_id = get_next_opt_id!(args, u32 => user_id)?;
     let content = get_next_field!(args, content)?;
 
-    let payload = EditCommentPayload { id, content };
+    let payload = EditCommentPayload {
+        id,
+        user_id,
+        content,
+    };
 
     run_client_action(|client| client.edit_comment(payload));
     Ok(())
@@ -380,8 +404,12 @@ fn run_edit_comment<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()>
 
 fn run_hide_comment<'a>(mut args: impl Iterator<Item = &'a str>) -> Fallible<()> {
     let id = get_next_id!(args, u32 => id)?;
-
-    let payload = HideCommentPayload { id, hide: true };
+    let user_id = get_next_opt_id!(args, u32 => user_id)?;
+    let payload = HideCommentPayload {
+        id,
+        user_id,
+        hide: true,
+    };
 
     run_client_action(|client| client.hide_comment(payload));
     Ok(())

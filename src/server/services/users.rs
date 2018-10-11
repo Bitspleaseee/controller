@@ -40,7 +40,9 @@ pub fn add_user(con: &DbConn, payload: AddUserPayload) -> IntResult<UserPayload>
 pub fn edit_user(con: &DbConn, payload: EditUserPayload) -> IntResult<UserPayload> {
     trace!("edit_user {:?}", payload);
 
-    db::users::update_user(con, payload).and_then(|p| {
+    let user_id = payload.id.ok_or(IntErrorKind::InvalidId)?;
+
+    db::users::update_user(con, user_id, payload).and_then(|p| {
         trace!("got payload from db: {:?}", p);
         <User as TryInto<UserPayload>>::try_into(p)
             .context(IntErrorKind::ServerError)

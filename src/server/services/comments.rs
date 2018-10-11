@@ -62,6 +62,8 @@ pub fn get_all_comments(con: &DbConn, payload: GetHiddenPayload) -> IntResult<Ve
 pub fn add_comment(con: &DbConn, payload: AddCommentPayload) -> IntResult<CommentPayload> {
     trace!("add_comment: {:?}", payload);
 
+    let _user_id = payload.user_id.ok_or(IntErrorKind::InvalidId)?;
+
     db::comments::insert_comment(&con, payload).and_then(|p| {
         <Comment as TryInto<CommentPayload>>::try_into(p)
             .context(IntErrorKind::ServerError)
@@ -75,7 +77,9 @@ pub fn add_comment(con: &DbConn, payload: AddCommentPayload) -> IntResult<Commen
 pub fn edit_comment(con: &DbConn, payload: EditCommentPayload) -> IntResult<CommentPayload> {
     trace!("edit_comment: {:?}", payload);
 
-    db::comments::update_comment(&con, payload).and_then(|p| {
+    let user_id = payload.user_id.ok_or(IntErrorKind::InvalidId)?;
+
+    db::comments::update_comment(&con, user_id, payload).and_then(|p| {
         <Comment as TryInto<CommentPayload>>::try_into(p)
             .context(IntErrorKind::ServerError)
             .map_err(|e| {
@@ -88,7 +92,9 @@ pub fn edit_comment(con: &DbConn, payload: EditCommentPayload) -> IntResult<Comm
 pub fn hide_comment(con: &DbConn, payload: HideCommentPayload) -> IntResult<CommentPayload> {
     trace!("hide_comment: {:?}", payload);
 
-    db::comments::update_comment(&con, payload).and_then(|p| {
+    let user_id = payload.user_id.ok_or(IntErrorKind::InvalidId)?;
+
+    db::comments::update_comment(&con, user_id, payload).and_then(|p| {
         <Comment as TryInto<CommentPayload>>::try_into(p)
             .context(IntErrorKind::ServerError)
             .map_err(|e| {

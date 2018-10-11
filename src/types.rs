@@ -39,7 +39,7 @@ pub struct UpdateUser {
 impl From<EditUserPayload> for UpdateUser {
     fn from(p: EditUserPayload) -> UpdateUser {
         UpdateUser {
-            id: *p.id,
+            id: p.id.map_or(0, |id| *id),
             description: p.description.map(|s| s.into_inner()),
             avatar: p.avatar,
         }
@@ -206,7 +206,7 @@ impl From<AddThreadPayload> for InsertThread {
     fn from(p: AddThreadPayload) -> InsertThread {
         InsertThread {
             category_id: *p.category_id,
-            user_id: *p.user_id,
+            user_id: p.user_id.map_or(0, |id| *id),
             title: p.title.into_inner(),
             description: p.description.into_inner(),
         }
@@ -283,7 +283,7 @@ impl From<AddCommentPayload> for InsertComment {
     fn from(p: AddCommentPayload) -> InsertComment {
         InsertComment {
             thread_id: *p.thread_id,
-            user_id: *p.user_id,
+            user_id: p.user_id.map_or(0, |id| *id),
             parent_id: p.parent_id.map(|i| *i),
             content: p.content.into_inner(),
         }

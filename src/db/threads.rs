@@ -11,6 +11,7 @@ use datatypes::valid::ids::*;
 pub fn insert_thread(con: &DbConn, thread: impl Into<InsertThread>) -> IntResult<Thread> {
     use super::schema::threads::dsl;
     let thread = thread.into();
+    let user_id = thread.user_id;
 
     trace!("Inserting thread");
 
@@ -22,11 +23,8 @@ pub fn insert_thread(con: &DbConn, thread: impl Into<InsertThread>) -> IntResult
             error!("Unable to insert new thread: {:?}", e);
             e.into()
         }).and_then(|_| {
-            // TODO can we be sure that this is the same thread that was
-            // inserted? If connections to the database happen concurrently,
-            // a different thread might insert a new thread between the time we
-            // inserted our thread and got the thread with the highest id back
             dsl::threads
+                .filter(dsl::user_id.eq(user_id))
                 .order(dsl::id.desc())
                 .first(con)
                 .optional()
@@ -125,21 +123,30 @@ pub fn delete_all_threads(con: &DbConn) -> IntResult<usize> {
 }
 
 /// Updates an existing thread in the thread table
-pub fn update_thread(con: &DbConn, thread: impl Into<UpdateThread>) -> IntResult<Thread> {
+pub fn update_thread(
+    con: &DbConn,
+    user_id: UserId,
+    thread: impl Into<UpdateThread>,
+) -> IntResult<Thread> {
+    use super::schema::threads::dsl;
+
     let thread = thread.into();
     let id = thread.id;
 
     trace!("Updating thread ({})", id);
 
-    thread
-        .save_changes(con)
-        .optional()
-        .context(IntErrorKind::QueryError)?
-        .ok_or(IntErrorKind::ContentNotFound)
-        .map_err(|e| {
-            error!("Unable to update thread ({}): {}", id, e);
-            e.into()
-        })
+    let updated = diesel::update(dsl::threads)
+        .filter(dsl::id.eq(id))
+        .filter(dsl::user_id.eq(*user_id))
+        .set(&thread)
+        .execute(con)
+        .context(IntErrorKind::QueryError)?;
+
+    if updated == 0 {
+        return Err(IntErrorKind::ContentNotFound.into());
+    }
+
+    get_thread(con, id.into(), true)
 }
 
 #[cfg(test)]
@@ -151,7 +158,7 @@ mod tests {
 
     #[test]
     fn insert_and_get() {
-        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        let con = establish_connection(&std::env::var("CONTROLLER_DATABASE_URL").unwrap()).unwrap();
 
         // User
         let insert_data = InsertUser {
@@ -210,7 +217,7 @@ mod tests {
 
     #[test]
     fn update() {
-        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        let con = establish_connection(&std::env::var("CONTROLLER_DATABASE_URL").unwrap()).unwrap();
 
         // User
         let insert_data = InsertUser {
@@ -280,7 +287,7 @@ mod tests {
 
         // Update
         update_data.id = returned_data.id;
-        let returned_data = update_thread(&con, update_data);
+        let returned_data = update_thread(&con, user.id.into(), update_data);
         assert!(returned_data.is_ok());
         let returned_data = returned_data.unwrap();
 
@@ -292,7 +299,7 @@ mod tests {
 
     #[test]
     fn hide() {
-        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        let con = establish_connection(&std::env::var("CONTROLLER_DATABASE_URL").unwrap()).unwrap();
 
         // User
         let insert_data = InsertUser {
@@ -337,7 +344,7 @@ mod tests {
 
         // Delete
         update_data.id = returned_data.id;
-        assert!(update_thread(&con, update_data).is_ok());
+        assert!(update_thread(&con, user.id.into(), update_data).is_ok());
 
         // Fail to get
         assert!(get_thread(&con, returned_data.id.into(), false).is_err());

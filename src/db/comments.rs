@@ -11,6 +11,7 @@ use datatypes::valid::ids::*;
 pub fn insert_comment(con: &DbConn, comment: impl Into<InsertComment>) -> IntResult<Comment> {
     use super::schema::comments::dsl;
     let comment = comment.into();
+    let user_id = comment.user_id;
 
     trace!("Inserting comment");
 
@@ -23,6 +24,7 @@ pub fn insert_comment(con: &DbConn, comment: impl Into<InsertComment>) -> IntRes
             e.into()
         }).and_then(|_| {
             dsl::comments
+                .filter(dsl::user_id.eq(user_id))
                 .order(dsl::id.desc())
                 .first(con)
                 .optional()
@@ -121,21 +123,30 @@ pub fn delete_all_comments(con: &DbConn) -> IntResult<usize> {
 }
 
 /// Updates an existing comment in the comment table
-pub fn update_comment(con: &DbConn, comment: impl Into<UpdateComment>) -> IntResult<Comment> {
+pub fn update_comment(
+    con: &DbConn,
+    user_id: UserId,
+    comment: impl Into<UpdateComment>,
+) -> IntResult<Comment> {
+    use super::schema::comments::dsl;
+
     let comment = comment.into();
     let id = comment.id;
 
     trace!("Updating comment ({})", id);
 
-    comment
-        .save_changes(con)
-        .optional()
-        .context(IntErrorKind::QueryError)?
-        .ok_or(IntErrorKind::ContentNotFound)
-        .map_err(|e| {
-            error!("Unable to update comment ({}): {}", id, e);
-            e.into()
-        })
+    let updated = diesel::update(dsl::comments)
+        .filter(dsl::id.eq(id))
+        .filter(dsl::user_id.eq(*user_id))
+        .set(&comment)
+        .execute(con)
+        .context(IntErrorKind::QueryError)?;
+
+    if updated == 0 {
+        return Err(IntErrorKind::ContentNotFound.into());
+    }
+
+    get_comment(con, id.into(), true)
 }
 
 #[cfg(test)]
@@ -147,7 +158,7 @@ mod tests {
 
     #[test]
     fn insert_and_get() {
-        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        let con = establish_connection(&std::env::var("CONTROLLER_DATABASE_URL").unwrap()).unwrap();
 
         // User
         let insert_data = InsertUser {
@@ -243,7 +254,7 @@ mod tests {
 
     #[test]
     fn update() {
-        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        let con = establish_connection(&std::env::var("CONTROLLER_DATABASE_URL").unwrap()).unwrap();
 
         // User
         let insert_data = InsertUser {
@@ -305,7 +316,7 @@ mod tests {
 
         // Update
         update_data.id = returned_data.id;
-        let returned_data = update_comment(&con, update_data);
+        let returned_data = update_comment(&con, user.id.into(), update_data);
         assert!(returned_data.is_ok());
         let returned_data = returned_data.unwrap();
 
@@ -317,7 +328,7 @@ mod tests {
 
     #[test]
     fn hide() {
-        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        let con = establish_connection(&std::env::var("CONTROLLER_DATABASE_URL").unwrap()).unwrap();
 
         // User
         let insert_data = InsertUser {
@@ -372,7 +383,7 @@ mod tests {
 
         // Delete
         update_data.id = returned_data.id;
-        assert!(update_comment(&con, update_data).is_ok());
+        assert!(update_comment(&con, user.id.into(), update_data).is_ok());
 
         // Fail to get
         assert!(get_comment(&con, returned_data.id.into(), false).is_err());

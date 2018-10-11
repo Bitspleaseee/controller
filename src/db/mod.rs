@@ -45,7 +45,7 @@ mod _tests {
 
     #[test]
     fn clear() {
-        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        let con = establish_connection(&std::env::var("CONTROLLER_DATABASE_URL").unwrap()).unwrap();
         assert!(comments::delete_all_comments(&con).is_ok());
         assert!(threads::delete_all_threads(&con).is_ok());
         assert!(categories::delete_all_categories(&con).is_ok());

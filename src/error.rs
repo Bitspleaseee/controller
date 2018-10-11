@@ -15,6 +15,8 @@ pub enum ErrorKind {
     ContentNotFound,
     #[fail(display = "failed to start tarpc server")]
     ServerError,
+    #[fail(display = "invalid id")]
+    InvalidId,
 }
 
 /// An internal error which can be used for debugging or error tracing
@@ -100,6 +102,7 @@ impl Into<ContentError> for Error {
             ErrorKind::QueryError => ContentError::InternalServerError,
             ErrorKind::ContentNotFound => ContentError::MissingContent,
             ErrorKind::ServerError => ContentError::InternalServerError,
+            ErrorKind::InvalidId => ContentError::InvalidId,
         }
     }
 }

@@ -119,7 +119,7 @@ mod tests {
 
     #[test]
     fn insert_and_get() {
-        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        let con = establish_connection(&std::env::var("CONTROLLER_DATABASE_URL").unwrap()).unwrap();
 
         let insert_data = InsertCategory {
             title: "TestTitle".to_string(),
@@ -153,7 +153,7 @@ mod tests {
 
     #[test]
     fn update() {
-        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        let con = establish_connection(&std::env::var("CONTROLLER_DATABASE_URL").unwrap()).unwrap();
 
         let insert_data = InsertCategory {
             title: "TestTitle".to_string(),
@@ -192,7 +192,7 @@ mod tests {
 
     #[test]
     fn hide() {
-        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        let con = establish_connection(&std::env::var("CONTROLLER_DATABASE_URL").unwrap()).unwrap();
 
         let insert_data = InsertCategory {
             title: "TestTitle".to_string(),

@@ -62,6 +62,8 @@ pub fn get_all_threads(con: &DbConn, payload: GetHiddenPayload) -> IntResult<Vec
 pub fn add_thread(con: &DbConn, payload: AddThreadPayload) -> IntResult<ThreadPayload> {
     trace!("add_thread: {:?}", payload);
 
+    let _user_id = payload.user_id.ok_or(IntErrorKind::InvalidId)?;
+
     db::threads::insert_thread(&con, payload).and_then(|p| {
         <Thread as TryInto<ThreadPayload>>::try_into(p)
             .context(IntErrorKind::ServerError)
@@ -77,7 +79,9 @@ pub fn edit_thread(con: &DbConn, payload: EditThreadPayload) -> IntResult<Thread
 
     trace!("edit_thread: {:?}", payload);
 
-    db::threads::update_thread(&con, payload).and_then(|p| {
+    let user_id = payload.user_id.ok_or(IntErrorKind::InvalidId)?;
+
+    db::threads::update_thread(&con, user_id, payload).and_then(|p| {
         <Thread as TryInto<ThreadPayload>>::try_into(p)
             .context(IntErrorKind::ServerError)
             .map_err(|e| {
@@ -92,7 +96,9 @@ pub fn hide_thread(con: &DbConn, payload: HideThreadPayload) -> IntResult<Thread
 
     trace!("hide_thread: {:?}", payload);
 
-    db::threads::update_thread(&con, payload).and_then(|p| {
+    let user_id = payload.user_id.ok_or(IntErrorKind::InvalidId)?;
+
+    db::threads::update_thread(&con, user_id, payload).and_then(|p| {
         <Thread as TryInto<ThreadPayload>>::try_into(p)
             .context(IntErrorKind::ServerError)
             .map_err(|e| {

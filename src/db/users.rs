@@ -90,20 +90,25 @@ pub fn delete_all_users(con: &DbConn) -> IntResult<usize> {
 }
 
 /// Updates an existing user in the user table
-pub fn update_user(con: &DbConn, user: impl Into<UpdateUser>) -> IntResult<User> {
+pub fn update_user(con: &DbConn, user_id: UserId, user: impl Into<UpdateUser>) -> IntResult<User> {
+    use super::schema::users::dsl;
+
     let user = user.into();
     let id = user.id;
 
     trace!("Updating user ({})", id);
 
-    user.save_changes(con)
-        .optional()
-        .context(IntErrorKind::QueryError)?
-        .ok_or(IntErrorKind::ContentNotFound)
-        .map_err(|e| {
-            error!("Unable to update user ({}): {}", id, e);
-            e.into()
-        })
+    let updated = diesel::update(dsl::users)
+        .filter(dsl::id.eq(*user_id))
+        .set(&user)
+        .execute(con)
+        .context(IntErrorKind::QueryError)?;
+
+    if updated == 0 {
+        return Err(IntErrorKind::ContentNotFound.into());
+    }
+
+    get_user(con, id.into())
 }
 
 #[cfg(test)]
@@ -113,7 +118,7 @@ mod tests {
 
     #[test]
     fn insert_and_get() {
-        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        let con = establish_connection(&std::env::var("CONTROLLER_DATABASE_URL").unwrap()).unwrap();
 
         let insert_data = InsertUser {
             id: 1,
@@ -146,7 +151,7 @@ mod tests {
 
     #[test]
     fn update() {
-        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        let con = establish_connection(&std::env::var("CONTROLLER_DATABASE_URL").unwrap()).unwrap();
 
         let insert_data = InsertUser {
             id: 2,
@@ -170,7 +175,7 @@ mod tests {
         assert!(insert_user(&con, insert_data).is_ok());
 
         // Update
-        let returned_data = update_user(&con, update_data);
+        let returned_data = update_user(&con, update_data.id.into(), update_data);
         assert!(returned_data.is_ok());
         let returned_data = returned_data.unwrap();
 
@@ -180,7 +185,7 @@ mod tests {
 
     #[test]
     fn delete() {
-        let con = establish_connection(&std::env::var("DATABASE_URL").unwrap()).unwrap();
+        let con = establish_connection(&std::env::var("CONTROLLER_DATABASE_URL").unwrap()).unwrap();
 
         // insert
         let insert_data = InsertUser {
